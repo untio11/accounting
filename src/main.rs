@@ -3,7 +3,7 @@ use std::{env, error::Error, fs::File, path, process};
 mod parsing;
 mod processing;
 
-use crate::{parsing::IngCurrentAccount, processing::types::transaction::Transaction};
+use crate::{parsing::IngCurrentAccount, processing::types::Transaction};
 
 fn main() {
     if let Err(err) = csv_from_file(get_first_arg()) {
@@ -49,6 +49,7 @@ fn print_csv_line(line: &IngCurrentAccount) {
     println!("Source:      {:?}", line.source());
     println!("Sink:        {:?}", line.sink());
     println!("Inhrnt Tgs:  {:?}", line.inherent_tags());
+    println!("Description: {}", line.description());
     println!("=========================================");
 }
 

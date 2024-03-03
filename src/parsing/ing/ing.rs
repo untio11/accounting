@@ -1,5 +1,4 @@
-use crate::processing::types::transaction::{Account, SubAccount, Transaction};
-use crate::{parsing::types::direction::Direction, processing::types::transaction::AccountType};
+use crate::{parsing::types::*, processing::types::*};
 use chrono::NaiveDate;
 use iban::Iban;
 use regex::Regex;
@@ -27,44 +26,57 @@ pub enum Code {
 
 crate::date_deserializer_from_format!("%Y%m%d");
 
+/// Slightly processed CSV from ING. Raw, use as base to implement
+/// Transation.
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
 pub struct IngCurrentAccount {
+    /// YYYYMMDD -> YYYY-MM-DD
     #[serde(rename = "Date", with = "local_date_deserializer")]
     pub date: NaiveDate,
-    // YYYYMMDD -> YYYY-MM-DD
+
+    /// Name, often not very descriptive.
     #[serde(rename = "Name / Description")]
     pub name: String,
-    // Name, often not very descriptive.
+
+    /// XX00XXXX0000000000 -> IBAN, make a type for that. Always account of the owner?
     #[serde(rename = "Account", with = "serde_iban")]
     pub account: Iban,
-    // XX00XXXX0000000000 -> IBAN, make a type for that. Always account of the owner?
-    #[serde(rename = "Counterparty")]
-    pub counter_party: Option<String>,
+
     // IBAN, or [A-Z]?[0-9]{8} for ING sub-accounts (sparen, beleggen). Sparen actually empty, gotta extract from Notifications column...
     // Basically needs a post-processing step still. Do this when moving to universal transaction type.
+    #[serde(rename = "Counterparty")]
+    pub counter_party: Option<String>,
+
+    /// Constant type from see https://nl.wikipedia.org/wiki/Rekeningafschrift
     #[serde(rename = "Code")]
-    pub code: Code, // Constant type from see https://nl.wikipedia.org/wiki/Rekeningafschrift
+    pub code: Code,
 
+    /// Constant "Debit" | "Credit" - debit = incoming, credit = outgoing.
     #[serde(rename = "Debit/credit")]
-    pub direction: Direction, // Constant "Debit" | "Credit" - debit = incoming, credit = outgoing.
+    pub direction: Direction,
 
+    /// 0000,00 - Always positive: sign depends on `self.direction`.
     #[serde(rename = "Amount (EUR)", with = "serde_amount")]
-    pub amount: Decimal, // 0000,00 - Always positive: sign depends on `self.direction`.
+    pub amount: Decimal,
 
+    /// Full name of `self.code`.
     #[serde(rename = "Transaction type")]
-    pub transaction_type: String, // Full name of `self.code`.
+    pub transaction_type: String,
 
+    /// Extra description as filled in by the initiator of the transaction.
     #[serde(rename = "Notifications")]
-    pub description: String, // Extra description as filled in by the initiator of the transaction.
+    pub description: String,
 
+    /// 0000,00 - Balance of the account after this transaction
     #[serde(rename = "Resulting balance", with = "serde_amount")]
-    pub balance: Decimal, // 0000,00 - Balance of the account after this transaction
+    pub balance: Decimal,
 
+    /// Extra custom tags and/or text added by the account
+    /// owner. -> Split to a set of #tags and a rest String.
     #[serde(rename = "Tag")]
-    pub tags: String, // Extra custom tags and/or text added by the account owner. -> Split to a set of #tags and a rest String.
+    pub tags: String,
 }
 
-use crate::processing::types::transaction::Node;
 impl Transaction for IngCurrentAccount {
     fn amount(&self) -> Decimal {
         self.amount
@@ -165,44 +177,4 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
         "Cannot determine sink for transaction {:?}",
         ing_transaction
     );
-}
-
-mod serde_iban {
-    use iban::Iban;
-    use serde::{self, Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Iban, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s: String = String::deserialize(deserializer)?;
-        let dt: Iban = Iban::parse(&s).map_err(serde::de::Error::custom)?;
-        Ok(dt)
-    }
-}
-
-mod serde_amount {
-    use rust_decimal::Decimal;
-    use serde::{self, Deserialize, Deserializer};
-    use std::str::FromStr;
-
-    fn to_decimal(input: String) -> Decimal {
-        let input_locale: locale::Numeric = locale::Numeric {
-            decimal_sep: String::from(","),
-            thousands_sep: String::from("."),
-        };
-        let input = input.replace(&input_locale.decimal_sep, ".");
-        match Decimal::from_str(&input) {
-            Err(_) => panic!("Can't convert {}", input),
-            Ok(value) => value,
-        }
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Decimal, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s: String = String::deserialize(deserializer)?;
-        Ok(to_decimal(s))
-    }
 }
