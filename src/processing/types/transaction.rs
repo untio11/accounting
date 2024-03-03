@@ -7,20 +7,21 @@ use std::collections::HashSet;
 /// by the bank transaction exports.
 pub trait Transaction {
     /// The date on which the transaction is registered.
-    fn date() -> NaiveDate;
+    fn date(&self) -> NaiveDate;
     /// The source of the money that is transferred in this transaction.
-    fn source() -> Node;
+    fn source(&self) -> Node;
     /// The destination of the money that is transferred in this transaction.
-    fn sink() -> Node;
+    fn sink(&self) -> Node;
     /// The amount of money that is transferred in this transaction.
-    fn amount() -> Decimal;
+    fn amount(&self) -> Decimal;
     /// A set of tags that can be derived directly from the data of the raw csv transaction.
-    fn inherent_tags() -> HashSet<String>;
+    fn inherent_tags(&self) -> HashSet<String>;
     /// An inconsistantly formatted string describing some properties of the transaction.
-    fn description() -> String;
+    fn description(&self) -> String;
 }
 
 /// Represents a the points between which money flows during transactions.
+#[derive(Hash, Debug)]
 pub enum Node {
     /// A fully qualified bank account with an IBAN.
     ProperAccount(Account),
@@ -35,6 +36,7 @@ pub enum Node {
 }
 
 // TODO: Move to own module for modeling account datatypes
+#[derive(Hash, Debug)]
 pub enum AccountType {
     /// Your everyday account: pay bills, buy stuff, receive salary. Cash is flowing here.
     /// No interest though most of the time.
@@ -49,21 +51,21 @@ pub enum AccountType {
 }
 
 /// A proper bank account that is guaranteed to have an Iban.
-#[derive(Hash)]
+#[derive(Hash, Debug)]
 pub struct Account {
-    iban: Iban,
-    name: String,
-    account_type: Option<AccountType>, // TODO: Can we actually derive this information from the raw data though?
+    pub iban: Iban,
+    pub name: String,
+    pub account_type: Option<AccountType>, // TODO: Can we actually derive this information from the raw data though?
 }
 
 /// Almost a bank account, except it's tied to a real account and as such doesn't have
 /// an official iban.
-#[derive(Hash)]
+#[derive(Hash, Debug)]
 pub struct SubAccount {
     /// Bank Sub Account Number. This is not a "real" thing (I think), but it serves
     // its purpose.
-    bsan: String,
-    name: String,
-    parent_account: Account, // Might be nice to have?
-    account_type: Option<AccountType>,
+    pub bsan: String,
+    pub name: String,
+    pub parent_account: Account, // Might be nice to have?
+    pub account_type: Option<AccountType>,
 }
