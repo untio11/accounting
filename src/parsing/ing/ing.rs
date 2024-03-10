@@ -31,20 +31,20 @@ crate::date_deserializer_from_format!("%Y%m%d");
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
 pub struct IngCurrentAccount {
     /// YYYYMMDD -> YYYY-MM-DD
-    #[serde(rename = "Date", with = "local_date_deserializer")]
+    #[serde(rename = "Date", alias = "Datum", with = "local_date_deserializer")]
     pub date: NaiveDate,
 
     /// Name, often not very descriptive.
-    #[serde(rename = "Name / Description")]
+    #[serde(rename = "Name / Description", alias = "Naam / Omschrijving")]
     pub name: String,
 
     /// XX00XXXX0000000000 -> IBAN, make a type for that. Always account of the owner?
-    #[serde(rename = "Account", with = "serde_iban")]
+    #[serde(rename = "Account", alias = "Rekening", with = "serde_iban")]
     pub account: Iban,
 
     // IBAN, or [A-Z]?[0-9]{8} for ING sub-accounts (sparen, beleggen). Sparen actually empty, gotta extract from Notifications column...
     // Basically needs a post-processing step still. Do this when moving to universal transaction type.
-    #[serde(rename = "Counterparty")]
+    #[serde(rename = "Counterparty", alias = "Tegenrekening")]
     pub counter_party: Option<String>,
 
     /// Constant type from see https://nl.wikipedia.org/wiki/Rekeningafschrift
@@ -52,23 +52,23 @@ pub struct IngCurrentAccount {
     pub code: Code,
 
     /// Constant "Debit" | "Credit" - debit = incoming, credit = outgoing.
-    #[serde(rename = "Debit/credit")]
+    #[serde(rename = "Debit/credit", alias = "Af Bij")]
     pub direction: Direction,
 
     /// 0000,00 - Always positive: sign depends on `self.direction`.
-    #[serde(rename = "Amount (EUR)", with = "serde_amount")]
+    #[serde(rename = "Amount (EUR)", alias = "Bedrag (EUR)", with = "serde_amount")]
     pub amount: Decimal,
 
     /// Full name of `self.code`.
-    #[serde(rename = "Transaction type")]
+    #[serde(rename = "Transaction type", alias = "Mutatiesoort")]
     pub transaction_type: String,
 
     /// Extra description as filled in by the initiator of the transaction.
-    #[serde(rename = "Notifications")]
+    #[serde(rename = "Notifications", alias = "Mededelingen")]
     pub description: String,
 
     /// 0000,00 - Balance of the account after this transaction
-    #[serde(rename = "Resulting balance", with = "serde_amount")]
+    #[serde(rename = "Resulting balance", alias = "Saldo na mutatie", with = "serde_amount")]
     pub balance: Decimal,
 
     /// Extra custom tags and/or text added by the account
