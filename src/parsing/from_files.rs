@@ -2,8 +2,11 @@ use crate::parsing::IngCurrentAccount;
 use crate::processing::types::Transaction;
 use clap::Parser;
 use core::panic;
-use csv::Reader;
-use std::{error::Error, fs::File, path};
+use std::{
+    error::Error,
+    fs::{self, File},
+    path,
+};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -18,44 +21,53 @@ pub fn csv_from_file(file_path: &path::PathBuf) -> Result<(), Box<dyn Error>> {
     let files = match file_path {
         dirname if file_path.is_dir() => {
             println!("dirname: {:?}", dirname);
+            let mut files: Vec<path::PathBuf> = vec![];
+            for path in fs::read_dir(dirname)? {
+                let path = path.unwrap().path();
+                if path.is_file() && path.extension().unwrap() == "csv" {
+                    files.push(path);
+                }
+            }
+            files
         }
         csv_file if file_path.is_file() && file_path.extension().unwrap() == "csv" => {
             println!("csv_file: {:?}", csv_file);
+            vec![path::PathBuf::clone(csv_file)]
         }
         _ => panic!("Expecting a path to a directory or a .csv file"),
     };
-    let file = match File::open(file_path) {
-        Ok(file) => file,
-        Err(err) => return Err(From::from(err)),
-    };
 
-    let mut reader: Reader<File> = csv::ReaderBuilder::new()
-        .delimiter(b';') // Perhaps csv file specific.
-        .flexible(true)
-        .from_reader(file);
-
-    {
-        let headers = reader.headers().expect("There should be headers here fr.");
-        println!("Headers: \n{:?}", headers);
-    }
-
-    let mut parsed_csv: Vec<Transaction> = Vec::new();
-
-    for entry in reader.deserialize::<IngCurrentAccount>() {
-        match entry {
-            Err(err) => return Err(From::from(err)),
-            Ok(record) => {
-                parsed_csv.push(Transaction::from(record));
-            }
+    let mut transactions: Vec<Transaction> = Vec::new();
+    for file in files {
+        if let Ok(file) = File::open(file) {
+            println!("Reading: {:?}", file);
+            transactions.append(&mut read_transactions_from(file));
         }
     }
 
     println!("Accessing first element:");
-    for line in &parsed_csv[..=5] {
+    for line in &transactions[..] {
         print_csv_line(&line);
     }
 
     Ok(())
+}
+
+fn read_transactions_from(file: File) -> Vec<Transaction> {
+    let mut transactions: Vec<Transaction> = Vec::new();
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b';') // Perhaps csv file specific.
+        .flexible(true)
+        .from_reader(file);
+    for row in reader.deserialize::<IngCurrentAccount>() {
+        match row {
+            Ok(row) => {
+                transactions.push(Transaction::from(row));
+            }
+            _ => (),
+        }
+    }
+    return transactions;
 }
 
 pub fn print_csv_line(line: &Transaction) {
