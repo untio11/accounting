@@ -20,6 +20,7 @@ pkgs.mkShell {
 	
 	packages = with pkgs; [
 		nil
+		rust-analyzer
 	];
 	
 	# RUST_BACKTRACE = 1;

@@ -27,7 +27,7 @@ pub enum Code {
 crate::date_deserializer_from_format!("%Y%m%d");
 
 /// Slightly processed CSV from ING. Raw, use as base to implement
-/// Transation.
+/// Transaction.
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
 pub struct IngCurrentAccount {
     /// YYYYMMDD -> YYYY-MM-DD
@@ -68,7 +68,11 @@ pub struct IngCurrentAccount {
     pub description: String,
 
     /// 0000,00 - Balance of the account after this transaction
-    #[serde(rename = "Resulting balance", alias = "Saldo na mutatie", with = "serde_amount")]
+    #[serde(
+        rename = "Resulting balance",
+        alias = "Saldo na mutatie",
+        with = "serde_amount"
+    )]
     pub balance: Decimal,
 
     /// Extra custom tags and/or text added by the account
