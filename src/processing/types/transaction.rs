@@ -18,19 +18,28 @@ pub enum Node {
     ATM(String),
 }
 
+// pub trait Transaction {
+//     fn date(&self) -> NaiveDate;
+//     fn source(&self) -> Node;
+//     fn sink(&self) -> Node;
+//     fn amount(&self) -> Decimal;
+//     fn inherent_tags(&self) -> HashSet<String>;
+//     fn description(&self) -> String;
+// }
+
 /// A uniform representation of monetary transactions, decoupled from the format provided
 /// by the bank transaction exports.
-pub trait Transaction {
+pub struct Transaction {
     /// The date on which the transaction is registered.
-    fn date(&self) -> NaiveDate;
+    pub date: NaiveDate,
     /// The source of the money that is transferred in this transaction.
-    fn source(&self) -> Node;
+    pub source: Node,
     /// The destination of the money that is transferred in this transaction.
-    fn sink(&self) -> Node;
+    pub sink: Node,
     /// The amount of money that is transferred in this transaction.
-    fn amount(&self) -> Decimal;
+    pub amount: Decimal,
     /// A set of tags that can be derived directly from the data of the raw csv transaction.
-    fn inherent_tags(&self) -> HashSet<String>;
+    pub inherent_tags: HashSet<String>,
     /// An inconsistantly formatted string describing some properties of the transaction.
-    fn description(&self) -> String;
+    pub description: String,
 }

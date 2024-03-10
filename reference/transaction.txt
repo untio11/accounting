@@ -1,0 +1,46 @@
+Accounts and Transactions
+
+- A sends money to B 		<=> B receives money from A 
+- A receives money from B	<=> B sends money to A
+
+A, B are both Accounts
+- Account name
+- Account number
+  - This isn't always the identifying property because it can be empty in some cases (getting cash at ATM)
+  - In the case of ING Savings accounts, it can be a non-iban sub-account number
+- ID
+  - Need some way to unambiguously identify accounts without account number. In general, it seems like there are some identifying properties in the description of the transaction in those cases, so extract those. Probably just hash them afterwards for uniformity.
+  Examples:
+  - Payment Terminal has <Term> property with a short id (Xxxxxx format?)
+  - Transfer to savings has sub-account numer in description (X99999999)
+
+
+Transactions have:
+- Source perspective (where were they exported from)
+- From: account
+- To: account
+- Description: text
+- Inherent Tags: Maybe<text>
+- Type: enum::code(desc: string)
+- Amount
+
+To/From kinda implies that Amount is always positive
+Maybe more interesting to look at it from SourcePerspective/Them angle: which is also how they are exported from ING. Then amount can indeed be negative. No need for explicit direction, though
+
+Abstract even further beyond?
+Account doesn't take into account (lol) things like payment terminals and such. Kinda nasty that this assymmetry exists from the perspective of the exporter.
+So: generalize to Node
+
+Node:
+- Identifier: A hash from some identifying properties of the node
+- Type: ProperAccount | SubAccount | Terminal | ...
+
+Then transactions become a lot cleaner:
+- Source: Node
+- Sink: Node
+- Amount: Money
+- Description: Text
+- Inherent Tags: String[]
+- ID: Hash
+- Date: NaiveDate
+

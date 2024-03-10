@@ -1,0 +1,28 @@
+Some things we want to track:
+- Owners of Nodes
+  - People: Me, Parents, Friends
+  - At least: Me
+- Cost post
+- Taking ownership or not of money from certain nodes
+  - Default: take ownership
+- Tag transactions
+- Tag generating rules per
+  - Node
+  - Global
+  - Generate set of tags from Transaction
+
+Thinking about interface:
+- Generate set of unique nodes
+  - Heap: most frequent nodes to the top
+- Then allow some user config per node
+  - name (override)
+  - owner
+- User tag system
+
+List of owners:
+- List nodes per owner
+
+Process:
+Command line interface?
+1. Load all csv's into set of transactions: remove duplicates
+2. 

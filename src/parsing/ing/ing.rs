@@ -77,48 +77,47 @@ pub struct IngCurrentAccount {
     pub tags: String,
 }
 
-impl Transaction for IngCurrentAccount {
-    fn amount(&self) -> Decimal {
-        self.amount
-    }
-
-    fn date(&self) -> NaiveDate {
-        self.date
-    }
-
-    fn description(&self) -> String {
-        String::from(&self.description)
-    }
-
-    fn inherent_tags(&self) -> std::collections::HashSet<String> {
-        // TODO: Figure out why we don't match #books at the end of the tags string.
-        let reg = Regex::new(r"(#.+?)\b").unwrap();
-        std::collections::HashSet::from_iter(
-            reg.find_iter(&self.tags)
-                .map(|m| String::from(m.as_str().trim())),
-        )
-    }
-
-    fn sink(&self) -> Node {
-        match self.direction {
-            Direction::Incoming => Node::ProperAccount(Account {
-                iban: self.account,
-                name: String::from("My Account"),
-                account_type: Some(AccountType::Checking), // TODO: Un-hardcode this -> from config
-            }),
-            Direction::Outgoing => determine_node_type(&self),
+impl From<IngCurrentAccount> for Transaction {
+    fn from(value: IngCurrentAccount) -> Self {
+        Transaction {
+            amount: value.amount,
+            date: value.date,
+            description: String::from(&value.description),
+            inherent_tags: inherent_tags(&value),
+            source: source(&value),
+            sink: sink(&value),
         }
     }
+}
 
-    fn source(&self) -> Node {
-        match self.direction {
-            Direction::Outgoing => Node::ProperAccount(Account {
-                iban: self.account,
-                name: String::from("My Account"),
-                account_type: Some(AccountType::Checking), // TODO: Un-hardcode this.
-            }),
-            Direction::Incoming => determine_node_type(self),
-        }
+fn inherent_tags(ing_transaction: &IngCurrentAccount) -> std::collections::HashSet<String> {
+    // TODO: Figure out why we don't match #books at the end of the tags string.
+    let reg = Regex::new(r"(#.+?)\b").unwrap();
+    std::collections::HashSet::from_iter(
+        reg.find_iter(&ing_transaction.tags)
+            .map(|m| String::from(m.as_str().trim())),
+    )
+}
+
+fn sink(ing_transaction: &IngCurrentAccount) -> Node {
+    match ing_transaction.direction {
+        Direction::Incoming => Node::ProperAccount(Account {
+            iban: ing_transaction.account,
+            name: String::from("My Account"),
+            account_type: Some(AccountType::Checking), // TODO: Un-hardcode this -> from config
+        }),
+        Direction::Outgoing => determine_node_type(ing_transaction),
+    }
+}
+
+fn source(ing_transaction: &IngCurrentAccount) -> Node {
+    match ing_transaction.direction {
+        Direction::Outgoing => Node::ProperAccount(Account {
+            iban: ing_transaction.account,
+            name: String::from("My Account"),
+            account_type: Some(AccountType::Checking), // TODO: Un-hardcode this.
+        }),
+        Direction::Incoming => determine_node_type(ing_transaction),
     }
 }
 

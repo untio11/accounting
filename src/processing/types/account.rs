@@ -1,6 +1,5 @@
 use iban::Iban;
 
-// TODO: Move to own module for modeling account datatypes
 #[derive(Hash, Debug)]
 pub enum AccountType {
     /// Your everyday account: pay bills, buy stuff, receive salary. Cash is flowing here.

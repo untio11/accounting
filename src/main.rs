@@ -21,35 +21,14 @@ fn get_first_arg() -> path::PathBuf {
     }
 }
 
-fn print_csv_line(line: &IngCurrentAccount) {
+fn print_csv_line(line: &Transaction) {
     println!("\n=========================================");
-    println!("As IngCurrentAccount:");
-    println!("Name:        {}", line.name);
     println!("Amount:      {}", line.amount);
     println!("Date:        {}", line.date);
-    println!("Account:     {}", line.account);
-    println!(
-        "Cntrprty:    {}",
-        match &line.counter_party {
-            Some(iban) => iban.to_string(),
-            None => String::from("-"),
-        }
-    );
-    println!("Direction:   {:?}", line.direction);
-    println!("Code:        {:?}", line.code);
-    println!("Type:        {}", line.transaction_type);
+    println!("Source:      {:?}", line.source);
+    println!("Sink:        {:?}", line.sink);
+    println!("Inhrnt Tgs:  {:?}", line.inherent_tags);
     println!("Description: {}", line.description);
-    println!("Balance:     {}", line.balance);
-    println!("Tags:        {}", line.tags);
-
-    println!();
-
-    println!("Amount:      {}", line.amount());
-    println!("Date:        {}", line.date());
-    println!("Source:      {:?}", line.source());
-    println!("Sink:        {:?}", line.sink());
-    println!("Inhrnt Tgs:  {:?}", line.inherent_tags());
-    println!("Description: {}", line.description());
     println!("=========================================");
 }
 
@@ -69,13 +48,13 @@ fn csv_from_file(file_path: path::PathBuf) -> Result<(), Box<dyn Error>> {
         println!("Headers: \n{:?}", headers);
     }
 
-    let mut parsed_csv: Vec<IngCurrentAccount> = Vec::new();
+    let mut parsed_csv: Vec<Transaction> = Vec::new();
 
-    for entry in reader.deserialize() {
+    for entry in reader.deserialize::<IngCurrentAccount>() {
         match entry {
             Err(err) => return Err(From::from(err)),
             Ok(record) => {
-                parsed_csv.push(record);
+                parsed_csv.push(Transaction::from(record));
             }
         }
     }

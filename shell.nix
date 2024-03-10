@@ -22,6 +22,6 @@ pkgs.mkShell {
 		nil
 	];
 	
-	RUST_BACKTRACE = 1;
+	# RUST_BACKTRACE = 1;
 	RUST_SRC_PATH = "${rust}/lib/rustlib/src";
 }
