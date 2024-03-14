@@ -9,7 +9,7 @@ pub enum AccountType {
     Saving,
     /// Also for saving money. Generally higher interest than savings account, but you
     /// sign a contract with the bank to leave the money there for a fixed amount of time.
-    Deposit,
+    // Deposit,
     /// This is where you put your money if you want to participate in the stock market.
     Brokerage,
 }

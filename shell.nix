@@ -23,6 +23,6 @@ pkgs.mkShell {
 		rust-analyzer
 	];
 	
-	# RUST_BACKTRACE = 1;
+	RUST_BACKTRACE = 1;
 	RUST_SRC_PATH = "${rust}/lib/rustlib/src";
 }
