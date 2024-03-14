@@ -29,6 +29,7 @@ pub enum Node {
 
 /// A uniform representation of monetary transactions, decoupled from the format provided
 /// by the bank transaction exports.
+#[derive(Debug)]
 pub struct Transaction {
     /// The date on which the transaction is registered.
     pub date: NaiveDate,

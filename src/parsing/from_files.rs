@@ -17,7 +17,7 @@ pub struct Args {
     pub path: std::path::PathBuf,
 }
 
-pub fn csv_from_file(file_path: &path::PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<dyn Error>> {
     let files = match file_path {
         dirname if file_path.is_dir() => {
             println!("dirname: {:?}", dirname);
@@ -50,7 +50,7 @@ pub fn csv_from_file(file_path: &path::PathBuf) -> Result<(), Box<dyn Error>> {
         print_csv_line(&line);
     }
 
-    Ok(())
+    Ok(transactions)
 }
 
 fn read_transactions_from(file: File) -> Vec<Transaction> {
