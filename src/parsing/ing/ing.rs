@@ -95,7 +95,6 @@ impl From<IngCurrentAccount> for Transaction {
 }
 
 fn inherent_tags(ing_transaction: &IngCurrentAccount) -> std::collections::HashSet<String> {
-    // TODO: Figure out why we don't match #books at the end of the tags string.
     let reg = Regex::new(r"(#.+?)\b").unwrap();
     std::collections::HashSet::from_iter(
         reg.find_iter(&ing_transaction.tags)

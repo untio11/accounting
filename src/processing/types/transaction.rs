@@ -3,7 +3,7 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use std::collections::HashSet;
 
-/// Represents a the points between which money flows during transactions.
+/// Represents a point between which money flows during transactions.
 #[derive(Hash, Debug)]
 pub enum Node {
     /// A fully qualified bank account with an IBAN.
@@ -17,15 +17,6 @@ pub enum Node {
     /// Make those numbers real and turn them into cold, hard cash.
     ATM(String),
 }
-
-// pub trait Transaction {
-//     fn date(&self) -> NaiveDate;
-//     fn source(&self) -> Node;
-//     fn sink(&self) -> Node;
-//     fn amount(&self) -> Decimal;
-//     fn inherent_tags(&self) -> HashSet<String>;
-//     fn description(&self) -> String;
-// }
 
 /// A uniform representation of monetary transactions, decoupled from the format provided
 /// by the bank transaction exports.
