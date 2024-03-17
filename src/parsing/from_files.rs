@@ -3,6 +3,7 @@ use crate::processing::types::Transaction;
 use clap::Parser;
 use core::panic;
 use std::{
+    collections::HashSet,
     error::Error,
     fs::{self, File},
     path,
@@ -27,6 +28,9 @@ pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<
                 if path.is_file() && path.extension().unwrap() == "csv" {
                     files.push(path);
                 }
+            }
+            if files.len() == 0 {
+                panic!("The directory: {:?} contains no .csv files.", dirname);
             }
             files
         }
@@ -67,6 +71,12 @@ fn read_transactions_from(file: File) -> Vec<Transaction> {
             _ => (),
         }
     }
+    return transactions;
+}
+
+fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
+    let set: HashSet<_> = transactions.drain(..).collect(); // dedup
+    transactions.extend(set.into_iter());
     return transactions;
 }
 

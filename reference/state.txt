@@ -22,7 +22,30 @@ Thinking about interface:
 List of owners:
 - List nodes per owner
 
-Process:
-Command line interface?
+Workflow:
+1. Configuration Mode
+  - Allow the user to configure systems and rules for analysis
+  - (View:Nodes) Summary list of nodes in the system, allow user to select node(s) 
+    to configure.
+  - (View:Node) Detail view of a specific node, allow user to configure properties
+    of this node: - Set owner, - Set tags, - Set name, - Seed values, - Etc.
+  - (View:Owner/s) List owners (most cases probably just one: you), allow user to 
+    assign properties: - Owned nodes, 
+  - (View:Rules) Define rules on transactions.
+  - (View:Transactions) Mainly debugging, immutable view of imported transactions.
+
+Command line interface/tui?
 1. Load all csv's into set of transactions: remove duplicates
+  - Store versions of these parsed transactions? -> Perhaps later
+    if we the cost of recomputing every time is too much.
+  - Just load them into a HashSet? -> No, then you lose the order (within the day)
+    - Does losing order matter? We can order at the granularity of days,
+      which is fine enough?
 2. 
+
+=====
+Some things to track in state:
+- Owners
+- Owners -(owned)-> {Nodes}
+- Nodes that have certain properties set:
+  - 

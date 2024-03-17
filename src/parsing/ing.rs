@@ -94,12 +94,15 @@ impl From<IngCurrentAccount> for Transaction {
     }
 }
 
-fn inherent_tags(ing_transaction: &IngCurrentAccount) -> std::collections::HashSet<String> {
+fn inherent_tags(ing_transaction: &IngCurrentAccount) -> Vec<String> {
     let reg = Regex::new(r"(#.+?)\b").unwrap();
-    std::collections::HashSet::from_iter(
+    let mut result = Vec::from_iter(
         reg.find_iter(&ing_transaction.tags)
             .map(|m| String::from(m.as_str().trim())),
-    )
+    );
+    result.sort_unstable();
+    result.dedup();
+    return result;
 }
 
 fn sink(ing_transaction: &IngCurrentAccount) -> Node {

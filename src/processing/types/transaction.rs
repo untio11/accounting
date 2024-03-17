@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use std::collections::HashSet;
 
 /// Represents a point between which money flows during transactions.
-#[derive(Hash, Debug)]
+#[derive(Hash, Debug, PartialEq, Eq)]
 pub enum Node {
     /// A fully qualified bank account with an IBAN.
     ProperAccount(Account),
@@ -20,7 +20,7 @@ pub enum Node {
 
 /// A uniform representation of monetary transactions, decoupled from the format provided
 /// by the bank transaction exports.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Transaction {
     /// The date on which the transaction is registered.
     pub date: NaiveDate,
@@ -31,7 +31,7 @@ pub struct Transaction {
     /// The amount of money that is transferred in this transaction.
     pub amount: Decimal,
     /// A set of tags that can be derived directly from the data of the raw csv transaction.
-    pub inherent_tags: HashSet<String>,
+    pub inherent_tags: Vec<String>,
     /// An inconsistantly formatted string describing some properties of the transaction.
     pub description: String,
 }

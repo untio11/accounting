@@ -1,6 +1,6 @@
 use iban::Iban;
 
-#[derive(Hash, Debug)]
+#[derive(Hash, Debug, PartialEq, Eq)]
 pub enum AccountType {
     /// Your everyday account: pay bills, buy stuff, receive salary. Cash is flowing here.
     /// No interest though most of the time.
@@ -15,7 +15,7 @@ pub enum AccountType {
 }
 
 /// A proper bank account that is guaranteed to have an Iban.
-#[derive(Hash, Debug)]
+#[derive(Hash, Debug, PartialEq, Eq)]
 pub struct Account {
     pub iban: Iban,
     pub name: String,
@@ -24,7 +24,7 @@ pub struct Account {
 
 /// Almost a bank account, except it's tied to a real account and as such doesn't have
 /// an official iban.
-#[derive(Hash, Debug)]
+#[derive(Hash, Debug, PartialEq, Eq)]
 pub struct SubAccount {
     /// Bank Sub Account Number. This is not a "real" thing (I think), but it serves
     // its purpose.
