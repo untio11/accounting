@@ -1,14 +1,13 @@
+use super::account::{Account, SubAccount};
+use crate::processing::{Identify, ID};
+use chrono::NaiveDate;
+use rust_decimal::Decimal;
 use std::{
     collections::hash_map::DefaultHasher,
     fmt::{Debug, Display},
     hash::{Hash, Hasher},
+    marker::PhantomData,
 };
-
-use crate::processing::Identify;
-
-use super::account::{Account, SubAccount};
-use chrono::NaiveDate;
-use rust_decimal::Decimal;
 
 /// Represents a point between which money flows during transactions.
 #[derive(Hash, Debug, PartialEq, Eq)]
@@ -37,14 +36,15 @@ impl Node {
 }
 
 impl Identify for Node {
-    fn id(&self) -> u64 {
+    type IdType = Node;
+    fn id(&self) -> ID<Node> {
         let mut hasher = DefaultHasher::new();
         match self {
             Node::ProperAccount(acc) => acc.id(),
             Node::SubAccount(acc) => acc.id(),
             Node::Terminal(id) | Node::ATM(id) => {
                 id.hash(&mut hasher);
-                return hasher.finish();
+                return ID(hasher.finish(), PhantomData);
             }
         }
     }
@@ -52,7 +52,7 @@ impl Identify for Node {
 
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{:X}] {}", self.id(), self.name())
+        write!(f, "[{:?}] {}", self.id(), self.name())
     }
 }
 
@@ -74,4 +74,6 @@ pub struct Transaction {
     pub description: String,
 }
 
-impl Identify for Transaction {}
+impl Identify for Transaction {
+    type IdType = Transaction;
+}

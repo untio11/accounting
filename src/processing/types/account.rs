@@ -2,11 +2,12 @@ use core::fmt;
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
+    marker::PhantomData,
 };
 
 use iban::Iban;
 
-use crate::processing::Identify;
+use crate::processing::{Identify, ID};
 
 #[derive(Hash, Debug, PartialEq, Eq)]
 pub enum AccountType {
@@ -31,11 +32,12 @@ pub struct Account {
 }
 
 impl Identify for Account {
+    type IdType = Self;
     /// Just hash the iban for uniformity.
-    fn id(&self) -> u64 {
+    fn id(&self) -> ID<Self> {
         let mut hasher = DefaultHasher::new();
         self.iban.hash(&mut hasher);
-        return hasher.finish();
+        return ID(hasher.finish(), PhantomData);
     }
 }
 /// Almost a bank account, except it's tied to a real account and as such doesn't have
@@ -51,11 +53,12 @@ pub struct SubAccount {
 }
 
 impl Identify for SubAccount {
+    type IdType = Self;
     /// Just hash the bsan for uniformity.
-    fn id(&self) -> u64 {
+    fn id(&self) -> ID<Self> {
         let mut hasher = DefaultHasher::new();
         self.bsan.hash(&mut hasher);
-        return hasher.finish();
+        return ID(hasher.finish(), PhantomData);
     }
 }
 impl fmt::Display for SubAccount {

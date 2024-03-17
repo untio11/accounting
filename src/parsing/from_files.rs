@@ -1,4 +1,4 @@
-use crate::processing::types::Transaction;
+use crate::processing::types::{Transaction, Transactions};
 use crate::{parsing::IngCurrentAccount, processing::Identify};
 use clap::Parser;
 use core::panic;
@@ -18,10 +18,23 @@ pub struct Args {
     pub path: std::path::PathBuf,
 }
 
-pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<dyn Error>> {
+/// Deserialize .csv files into a Vector of Transactions.
+///
+/// `file_path` can point to:
+/// - a directory that contains at least 1 .csv file. In this case,
+/// all .csv's in that directory will be deserialized.
+/// - a single .csv file. In this case, just this .csv file will be
+/// deserialized.
+///
+/// The resulting vector satisfies the following properties:
+/// - The transactions are sorted by increasing date, at the granularity
+/// of days. Order of transactions occuring on the same day cannot be guaranteed.
+/// - The transactions are unique. This is based on the hash of the transaction.
+/// Note: this isn't guaranteed to be the same hash ID you get from `Transaction::id()`.
+pub fn transactions_from_path(file_path: &path::PathBuf) -> Result<Transactions, Box<dyn Error>> {
     let files = match file_path {
         dirname if file_path.is_dir() => {
-            println!("dirname: {:?}", dirname);
+            println!("Looking for .csv files in directory: {:?}", dirname);
             let mut files: Vec<path::PathBuf> = vec![];
             for path in fs::read_dir(dirname)? {
                 let path = path.unwrap().path();
@@ -35,16 +48,16 @@ pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<
             files
         }
         csv_file if file_path.is_file() && file_path.extension().unwrap() == "csv" => {
-            println!("csv_file: {:?}", csv_file);
             vec![path::PathBuf::clone(csv_file)]
         }
         _ => panic!("Expecting a path to a directory or a .csv file"),
     };
 
     let mut transactions: Vec<Transaction> = Vec::new();
+    println!("Reading:");
     for file in files {
         if let Ok(file) = File::open(file) {
-            println!("Reading: {:?}", file);
+            println!("> {:?}", file);
             transactions.append(&mut read_transactions_from(file));
         }
     }
@@ -53,18 +66,25 @@ pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<
     let before = transactions.len();
     deduplicate(&mut transactions);
     println!(
-        "Removed {:?} duplicate transaction(s)",
+        "> Removed {:?} duplicate transaction(s)",
         before - transactions.len()
     );
 
-    println!("Accessing first element:");
-    for line in &transactions[..] {
+    println!("Sorting transactions on date");
+    transactions.sort_by(|a, b| a.date.cmp(&b.date));
+
+    println!("Accessing first 5 elements:");
+    for line in &transactions[..5] {
         print_csv_line(&line);
     }
 
     Ok(transactions)
 }
 
+/// Deserialize the transactions in a single .csv file. At this point, there
+/// are no guarantees about uniqueness or order.
+///
+/// Currently only supports hardcoded deserialization from `IngCurrentAccount`.
 fn read_transactions_from(file: File) -> Vec<Transaction> {
     let mut transactions: Vec<Transaction> = Vec::new();
     let mut reader = csv::ReaderBuilder::new()
@@ -82,16 +102,17 @@ fn read_transactions_from(file: File) -> Vec<Transaction> {
     return transactions;
 }
 
+/// Remove duplicate transactions from the vector. This leaves the transactions
+/// in random order.
 fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
     let set: HashSet<_> = transactions.drain(..).collect(); // dedup
     transactions.extend(set.into_iter());
-    transactions.sort_by(|a, b| a.date.cmp(&b.date));
     return transactions;
 }
 
 pub fn print_csv_line(line: &Transaction) {
     println!("\n+==================+");
-    println!("| {:X} |", line.id());
+    println!("| {:?} |", line.id());
     println!("+==================+");
     println!("| Amount:      {}", line.amount);
     println!("| Date:        {}", line.date);
