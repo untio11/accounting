@@ -16,7 +16,7 @@ impl FromStr for Direction {
         match input {
             "Af" | "Debit" => Ok(Self::Outgoing),
             "Bij" | "Credit" => Ok(Self::Incoming),
-            _ => Err(String::from_str("unknown Direction field").unwrap()),
+            _ => Err(String::from_str("unknown Direction field: {input}").unwrap()),
         }
     }
 }

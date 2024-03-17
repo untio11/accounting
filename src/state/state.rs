@@ -1,3 +1,6 @@
+use crate::processing::Node;
+
 pub struct Owner {
-    name: String,
+    pub name: String,
+    pub owned: Vec<Node>,
 }
