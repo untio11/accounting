@@ -1,7 +1,14 @@
+use std::{
+    collections::hash_map::DefaultHasher,
+    fmt::{Debug, Display},
+    hash::{Hash, Hasher},
+};
+
+use crate::processing::Identify;
+
 use super::account::{Account, SubAccount};
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
-use std::collections::HashSet;
 
 /// Represents a point between which money flows during transactions.
 #[derive(Hash, Debug, PartialEq, Eq)]
@@ -16,6 +23,37 @@ pub enum Node {
     Terminal(String),
     /// Make those numbers real and turn them into cold, hard cash.
     ATM(String),
+}
+
+impl Node {
+    fn name(&self) -> String {
+        match self {
+            Node::ATM(_) => String::from("ATM"),
+            Node::ProperAccount(acc) => format!("(PA) {}", acc.name),
+            Node::SubAccount(acc) => format!("(SA) {}", acc.name),
+            Node::Terminal(_) => String::from("Payment Terminal"),
+        }
+    }
+}
+
+impl Identify for Node {
+    fn id(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        match self {
+            Node::ProperAccount(acc) => acc.id(),
+            Node::SubAccount(acc) => acc.id(),
+            Node::Terminal(id) | Node::ATM(id) => {
+                id.hash(&mut hasher);
+                return hasher.finish();
+            }
+        }
+    }
+}
+
+impl Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:X}] {}", self.id(), self.name())
+    }
 }
 
 /// A uniform representation of monetary transactions, decoupled from the format provided
@@ -35,3 +73,5 @@ pub struct Transaction {
     /// An inconsistantly formatted string describing some properties of the transaction.
     pub description: String,
 }
+
+impl Identify for Transaction {}

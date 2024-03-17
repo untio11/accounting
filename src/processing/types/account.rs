@@ -1,4 +1,12 @@
+use core::fmt;
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
+
 use iban::Iban;
+
+use crate::processing::Identify;
 
 #[derive(Hash, Debug, PartialEq, Eq)]
 pub enum AccountType {
@@ -22,6 +30,14 @@ pub struct Account {
     pub account_type: Option<AccountType>, // TODO: Can we actually derive this information from the raw data though?
 }
 
+impl Identify for Account {
+    /// Just hash the iban for uniformity.
+    fn id(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.iban.hash(&mut hasher);
+        return hasher.finish();
+    }
+}
 /// Almost a bank account, except it's tied to a real account and as such doesn't have
 /// an official iban.
 #[derive(Hash, Debug, PartialEq, Eq)]
@@ -32,4 +48,18 @@ pub struct SubAccount {
     pub name: String,
     pub parent_account: Account, // Might be nice to have?
     pub account_type: Option<AccountType>,
+}
+
+impl Identify for SubAccount {
+    /// Just hash the bsan for uniformity.
+    fn id(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.bsan.hash(&mut hasher);
+        return hasher.finish();
+    }
+}
+impl fmt::Display for SubAccount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} | {}", self.bsan, self.name)
+    }
 }

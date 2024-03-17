@@ -1,5 +1,5 @@
-use crate::parsing::IngCurrentAccount;
 use crate::processing::types::Transaction;
+use crate::{parsing::IngCurrentAccount, processing::Identify};
 use clap::Parser;
 use core::panic;
 use std::{
@@ -49,6 +49,14 @@ pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<
         }
     }
 
+    println!("Deduplicating transactions");
+    let before = transactions.len();
+    deduplicate(&mut transactions);
+    println!(
+        "Removed {:?} duplicate transaction(s)",
+        before - transactions.len()
+    );
+
     println!("Accessing first element:");
     for line in &transactions[..] {
         print_csv_line(&line);
@@ -77,16 +85,19 @@ fn read_transactions_from(file: File) -> Vec<Transaction> {
 fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
     let set: HashSet<_> = transactions.drain(..).collect(); // dedup
     transactions.extend(set.into_iter());
+    transactions.sort_by(|a, b| a.date.cmp(&b.date));
     return transactions;
 }
 
 pub fn print_csv_line(line: &Transaction) {
-    println!("\n=========================================");
-    println!("Amount:      {}", line.amount);
-    println!("Date:        {}", line.date);
-    println!("Source:      {:?}", line.source);
-    println!("Sink:        {:?}", line.sink);
-    println!("Inhrnt Tgs:  {:?}", line.inherent_tags);
-    println!("Description: {}", line.description);
-    println!("=========================================");
+    println!("\n+==================+");
+    println!("| {:X} |", line.id());
+    println!("+==================+");
+    println!("| Amount:      {}", line.amount);
+    println!("| Date:        {}", line.date);
+    println!("| Source:      {}", line.source);
+    println!("| Sink:        {}", line.sink);
+    println!("| Inhrnt Tgs:  {:?}", line.inherent_tags);
+    println!("| Description: {}", line.description);
+    println!("+------------------+");
 }
