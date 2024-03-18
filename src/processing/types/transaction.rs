@@ -1,5 +1,8 @@
 use super::account::{Account, SubAccount};
-use crate::processing::{Identify, ID};
+use crate::{
+    parsing::Direction,
+    processing::{Identify, ID},
+};
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use std::{
@@ -10,7 +13,7 @@ use std::{
 };
 
 /// Represents a point between which money flows during transactions.
-#[derive(Hash, Debug, PartialEq, Eq)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone)]
 pub enum Node {
     /// A fully qualified bank account with an IBAN.
     ProperAccount(Account),
@@ -23,8 +26,8 @@ pub enum Node {
     /// Make those numbers real and turn them into cold, hard cash.
     ATM(String),
 }
-
 impl Node {
+    #[allow(dead_code)]
     fn name(&self) -> String {
         match self {
             Node::ATM(_) => String::from("ATM"),
@@ -33,15 +36,22 @@ impl Node {
             Node::Terminal(_) => String::from("Payment Terminal"),
         }
     }
+    fn display_details(self) -> String {
+        match &self {
+            Node::ATM(id) => format!("^{}^ {} (ATM)", self.id(), id),
+            Node::ProperAccount(acc) => format!("{}", acc),
+            Node::SubAccount(acc) => format!("{}", acc),
+            Node::Terminal(id) => format!("*{}* {} (Payment Terminal)", self.id(), id),
+        }
+    }
 }
-
 impl Identify for Node {
     type IdType = Node;
     fn id(&self) -> ID<Node> {
         let mut hasher = DefaultHasher::new();
         match self {
-            Node::ProperAccount(acc) => acc.id(),
-            Node::SubAccount(acc) => acc.id(),
+            Node::ProperAccount(acc) => Self::transfer_from(acc.id()),
+            Node::SubAccount(acc) => Self::transfer_from(acc.id()),
             Node::Terminal(id) | Node::ATM(id) => {
                 id.hash(&mut hasher);
                 return ID(hasher.finish(), PhantomData);
@@ -49,10 +59,9 @@ impl Identify for Node {
         }
     }
 }
-
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{:?}] {}", self.id(), self.name())
+        write!(f, "{}", self.clone().display_details())
     }
 }
 
@@ -72,8 +81,9 @@ pub struct Transaction {
     pub inherent_tags: Vec<String>,
     /// An inconsistantly formatted string describing some properties of the transaction.
     pub description: String,
+    /// Direction of the transaction.
+    pub direction: Direction,
 }
-
 impl Identify for Transaction {
     type IdType = Transaction;
 }

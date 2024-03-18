@@ -1,3 +1,4 @@
+use crate::parsing::Direction;
 use crate::processing::types::{Transaction, Transactions};
 use crate::{parsing::IngCurrentAccount, processing::Identify};
 use clap::Parser;
@@ -74,7 +75,7 @@ pub fn transactions_from_path(file_path: &path::PathBuf) -> Result<Transactions,
     transactions.sort_by(|a, b| a.date.cmp(&b.date));
 
     println!("Accessing first 5 elements:");
-    for line in &transactions[..5] {
+    for line in &transactions[..] {
         print_csv_line(&line);
     }
 
@@ -112,7 +113,15 @@ fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
 
 pub fn print_csv_line(line: &Transaction) {
     println!("\n+==================+");
-    println!("| {:?} |", line.id());
+    println!(
+        "| {} | ({})",
+        line.id(),
+        if line.direction == Direction::Incoming {
+            "+"
+        } else {
+            "-"
+        }
+    );
     println!("+==================+");
     println!("| Amount:      {}", line.amount);
     println!("| Date:        {}", line.date);

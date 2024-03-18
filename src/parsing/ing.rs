@@ -90,6 +90,7 @@ impl From<IngCurrentAccount> for Transaction {
             inherent_tags: inherent_tags(&value),
             source: source(&value),
             sink: sink(&value),
+            direction: value.direction,
         }
     }
 }

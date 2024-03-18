@@ -10,7 +10,7 @@ fn main() -> Result<()> {
     println!("{:?}", args);
     if let Ok(transactions) = transactions_from_path(&args.path) {
         let node_freq = summaries::node_frequencies(transactions);
-        println!("Node frequencies: {:?}", node_freq);
+        println!("Node frequencies: {:#?}", node_freq);
 
         return Ok(());
     }
