@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use super::{
     types::{Node, Transactions},
     Identify, ID,
 };
+use std::collections::HashMap;
 
 pub fn node_frequencies(transactions: Transactions) -> HashMap<ID<Node>, u64> {
     let mut result = HashMap::new();

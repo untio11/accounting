@@ -3,22 +3,6 @@
 version = 3
 
 [[package]]
-name = "accounting"
-version = "0.0.1"
-dependencies = [
- "chrono",
- "clap",
- "color-eyre",
- "csv",
- "iban",
- "locale",
- "regex",
- "rust_decimal",
- "rust_decimal_macros",
- "serde",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -114,6 +98,22 @@ checksum = "1cd54b81ec8d6180e24654d0b371ad22fc3dd083b6ff8ba325b72e00c87660a7"
 dependencies = [
  "anstyle",
  "windows-sys",
+]
+
+[[package]]
+name = "app-accounting"
+version = "0.0.1"
+dependencies = [
+ "chrono",
+ "clap",
+ "color-eyre",
+ "csv",
+ "iban",
+ "locale",
+ "regex",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
 ]
 
 [[package]]
@@ -704,6 +704,10 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
 ]
+
+[[package]]
+name = "rapid-map"
+version = "0.1.0"
 
 [[package]]
 name = "regex"

@@ -80,7 +80,6 @@ pub struct IngCurrentAccount {
     #[serde(rename = "Tag")]
     pub tags: String,
 }
-
 impl From<IngCurrentAccount> for Transaction {
     fn from(value: IngCurrentAccount) -> Self {
         Transaction {
