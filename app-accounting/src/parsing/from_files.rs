@@ -43,7 +43,7 @@ pub fn transactions_from_path(file_path: &path::PathBuf) -> Result<Transactions,
                     files.push(path);
                 }
             }
-            if files.len() == 0 {
+            if files.is_empty() {
                 panic!("The directory: {:?} contains no .csv files.", dirname);
             }
             files
@@ -75,8 +75,8 @@ pub fn transactions_from_path(file_path: &path::PathBuf) -> Result<Transactions,
     transactions.sort_by(|a, b| a.date.cmp(&b.date));
 
     println!("Accessing first 5 elements:");
-    for line in &transactions[..] {
-        print_csv_line(&line);
+    for line in &transactions[..5] {
+        print_csv_line(line);
     }
 
     Ok(transactions)
@@ -92,23 +92,18 @@ fn read_transactions_from(file: File) -> Vec<Transaction> {
         .delimiter(b';') // Perhaps csv file specific.
         .flexible(true)
         .from_reader(file);
-    for row in reader.deserialize::<IngCurrentAccount>() {
-        match row {
-            Ok(row) => {
-                transactions.push(Transaction::from(row));
-            }
-            _ => (),
-        }
+    for row in reader.deserialize::<IngCurrentAccount>().flatten() {
+        transactions.push(Transaction::from(row));
     }
-    return transactions;
+    transactions
 }
 
 /// Remove duplicate transactions from the vector. This leaves the transactions
 /// in random order.
 fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
     let set: HashSet<_> = transactions.drain(..).collect(); // dedup
-    transactions.extend(set.into_iter());
-    return transactions;
+    transactions.extend(set);
+    transactions
 }
 
 pub fn print_csv_line(line: &Transaction) {

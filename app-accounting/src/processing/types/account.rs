@@ -26,7 +26,7 @@ pub enum AccountType {
 pub struct Account {
     pub iban: Iban,
     pub name: String,
-    pub account_type: Option<AccountType>, // TODO: Can we actually derive this information from the raw data though?
+    // pub account_type: Option<AccountType>, // TODO: Can we actually derive this information from the raw data though?
 }
 impl Identify for Account {
     type IdType = Self;
@@ -34,18 +34,12 @@ impl Identify for Account {
     fn id(&self) -> ID<Self> {
         let mut hasher = DefaultHasher::new();
         self.iban.hash(&mut hasher);
-        return ID(hasher.finish(), PhantomData);
+        ID(hasher.finish(), PhantomData)
     }
 }
 impl fmt::Display for Account {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "[{}] {} ({:?})",
-            self.id(),
-            self.name,
-            self.clone().account_type.unwrap_or(AccountType::Unknown)
-        )
+        write!(f, "[{}] {}", self.id(), self.name,)
     }
 }
 
@@ -57,7 +51,7 @@ pub struct SubAccount {
     // its purpose.
     pub bsan: String,
     pub name: String,
-    pub parent_account: Account, // Might be nice to have?
+    pub parent_account: Option<ID<Account>>, // Might be nice to have? -> Also not generally known at read-time
     pub account_type: Option<AccountType>,
 }
 impl Identify for SubAccount {
@@ -66,15 +60,15 @@ impl Identify for SubAccount {
     fn id(&self) -> ID<Self> {
         let mut hasher = DefaultHasher::new();
         self.bsan.hash(&mut hasher);
-        return ID(hasher.finish(), PhantomData);
+        ID(hasher.finish(), PhantomData)
     }
 }
 impl fmt::Display for SubAccount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "[{}/ {}] {}",
-            self.parent_account.id(),
+            "[{:?}/ {}] {}",
+            self.parent_account,
             self.id(),
             self.name
         )

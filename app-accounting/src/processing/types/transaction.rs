@@ -24,13 +24,13 @@ pub enum Node {
     /// your card or phone to pay something.
     Terminal(String),
     /// Make those numbers real and turn them into cold, hard cash.
-    ATM(String),
+    Atm(String),
 }
 impl Node {
     #[allow(dead_code)]
     fn name(&self) -> String {
         match self {
-            Node::ATM(_) => String::from("ATM"),
+            Node::Atm(_) => String::from("ATM"),
             Node::ProperAccount(acc) => format!("(PA) {}", acc.name),
             Node::SubAccount(acc) => format!("(SA) {}", acc.name),
             Node::Terminal(_) => String::from("Payment Terminal"),
@@ -38,7 +38,7 @@ impl Node {
     }
     fn display_details(self) -> String {
         match &self {
-            Node::ATM(id) => format!("^{}^ {} (ATM)", self.id(), id),
+            Node::Atm(id) => format!("^{}^ {} (ATM)", self.id(), id),
             Node::ProperAccount(acc) => format!("{}", acc),
             Node::SubAccount(acc) => format!("{}", acc),
             Node::Terminal(id) => format!("*{}* {} (Payment Terminal)", self.id(), id),
@@ -52,9 +52,9 @@ impl Identify for Node {
         match self {
             Node::ProperAccount(acc) => Self::transfer_from(acc.id()),
             Node::SubAccount(acc) => Self::transfer_from(acc.id()),
-            Node::Terminal(id) | Node::ATM(id) => {
+            Node::Terminal(id) | Node::Atm(id) => {
                 id.hash(&mut hasher);
-                return ID(hasher.finish(), PhantomData);
+                ID(hasher.finish(), PhantomData)
             }
         }
     }

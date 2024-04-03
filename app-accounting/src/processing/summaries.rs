@@ -16,5 +16,5 @@ pub fn node_frequencies(transactions: Transactions) -> HashMap<ID<Node>, u64> {
             .and_modify(|freq| *freq += 1)
             .or_insert(1);
     }
-    return result;
+    result
 }

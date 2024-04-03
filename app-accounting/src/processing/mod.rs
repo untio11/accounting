@@ -8,11 +8,11 @@ use std::{
 pub mod summaries;
 pub mod types;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct ID<Of: Identify>(u64, PhantomData<Of>);
-impl<Of: Identify> Into<String> for ID<Of> {
-    fn into(self) -> String {
-        format!("{:X}<{:?}>", self.0, self.1)
+impl<Of: Identify> From<ID<Of>> for String {
+    fn from(val: ID<Of>) -> Self {
+        format!("{:X}", val.0)
     }
 }
 /// Display the `u64` ID value as a hexadecimal string.
@@ -35,6 +35,7 @@ impl<Of: Identify> Display for ID<Of> {
 pub trait Identify
 where
     Self: Hash + Debug,
+    Self::IdType: Identify,
 {
     type IdType;
     /// Generates a (somewhat?) consistent hash ID of self.
@@ -54,13 +55,10 @@ where
     ///     return ID(hasher.finish(), PhantomData);
     /// }
     /// ```
-    fn id(&self) -> ID<Self::IdType>
-    where
-        <Self as Identify>::IdType: Identify,
-    {
+    fn id(&self) -> ID<Self::IdType> {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
-        return ID(hasher.finish(), PhantomData);
+        ID(hasher.finish(), PhantomData)
     }
 
     /// Discard `other`'s ID Type and rewrap it in `Self::IdType`.
@@ -77,10 +75,7 @@ where
     /// let account_id: ID<Account> = Account::default().id();
     /// let node_id: ID<Node> = Node::transfer_from(account_id);
     /// ```
-    fn transfer_from<OtherIdType: Identify>(other: ID<OtherIdType>) -> ID<Self::IdType>
-    where
-        <Self as Identify>::IdType: Identify,
-    {
+    fn transfer_from<OtherIdType: Identify>(other: ID<OtherIdType>) -> ID<Self::IdType> {
         match other {
             ID(other_id_value, _) => ID(other_id_value, PhantomData),
         }
