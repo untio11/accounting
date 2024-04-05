@@ -47,7 +47,7 @@ pub fn csv_from_path(file_path: &path::PathBuf) -> Result<Vec<Transaction>, Box<
 
     println!("Accessing first element:");
     for line in &transactions[..] {
-        print_csv_line(&line);
+        print_csv_line(line);
     }
 
     Ok(transactions)
@@ -59,15 +59,10 @@ fn read_transactions_from(file: File) -> Vec<Transaction> {
         .delimiter(b';') // Perhaps csv file specific.
         .flexible(true)
         .from_reader(file);
-    for row in reader.deserialize::<IngCurrentAccount>() {
-        match row {
-            Ok(row) => {
-                transactions.push(Transaction::from(row));
-            }
-            _ => (),
-        }
+    for row in reader.deserialize::<IngCurrentAccount>().flatten() {
+        transactions.push(Transaction::from(row));
     }
-    return transactions;
+    transactions
 }
 
 pub fn print_csv_line(line: &Transaction) {

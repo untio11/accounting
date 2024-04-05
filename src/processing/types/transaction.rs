@@ -15,7 +15,7 @@ pub enum Node {
     /// your card or phone to pay something.
     Terminal(String),
     /// Make those numbers real and turn them into cold, hard cash.
-    ATM(String),
+    Atm(String),
 }
 
 // pub trait Transaction {

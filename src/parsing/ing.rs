@@ -134,7 +134,7 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
         return Node::Terminal(String::from(&mtch["terminalID"]));
     } else if ing_transaction.code == Code::GM {
         let mtch = term_id_matcher.next().unwrap();
-        return Node::ATM(String::from(&mtch["terminalID"]));
+        return Node::Atm(String::from(&mtch["terminalID"]));
     }
 
     if let Some(identifier) = &ing_transaction.counter_party {
@@ -146,7 +146,7 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
                 name: String::from(&ing_transaction.name),
                 account_type: None,
             });
-        } else if brokerage.is_match(&identifier) {
+        } else if brokerage.is_match(identifier) {
             return Node::SubAccount(SubAccount {
                 bsan: String::from(identifier),
                 name: String::from(&ing_transaction.name),
