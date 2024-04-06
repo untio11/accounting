@@ -15,6 +15,13 @@ use rusqlite::Connection;
 fn main() -> Result<()> {
     color_eyre::install()?;
     let db = Connection::open("sandbox/database.db")?;
+    db.execute(
+        "create table if not exists transactions (
+             id integer primary key,
+             name text not null unique
+         )",
+        NO_PARAMS,
+    )?;
     let args = crate::parsing::Args::parse();
     println!("{:?}", args);
     let my_account = Account {

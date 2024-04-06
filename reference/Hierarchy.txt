@@ -1,0 +1,18 @@
+Two external inputs:
+1. csv files containing transactions
+   - Processed into internal transaction representation
+   - Stored? -> Probably yeah. Immutable, but good as a cache? So we're not
+     reading those csv's every time.
+2. Some sort of user profile containing state
+   - profile_name: String
+   - tracking_nodes: Vec<String>
+   - rules: Collection<TaggingRules> // Later
+
+Persistance:
+- Transaction database: rustqlite
+- User profile: serialize/deserialize config files in common user directories.
+
+Hierarchy:
+- Sources - take external inputs (files) and write them to internal representation
+  - csv's -> deserialize csv, write to db, make available to rest of project.
+  - user state -> deserialize from file (json?), make available to rest of project.
