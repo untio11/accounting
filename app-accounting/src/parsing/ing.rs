@@ -1,4 +1,7 @@
-use crate::{parsing::types::*, processing::types::*};
+use crate::{
+    parsing::deserializers::*,
+    processing::{types::*, Identify},
+};
 use chrono::NaiveDate;
 use iban::Iban;
 use regex::Regex;
@@ -80,7 +83,6 @@ pub struct IngCurrentAccount {
     #[serde(rename = "Tag")]
     pub tags: String,
 }
-
 impl From<IngCurrentAccount> for Transaction {
     fn from(value: IngCurrentAccount) -> Self {
         Transaction {
@@ -90,17 +92,20 @@ impl From<IngCurrentAccount> for Transaction {
             inherent_tags: inherent_tags(&value),
             source: source(&value),
             sink: sink(&value),
+            direction: value.direction,
         }
     }
 }
 
-fn inherent_tags(ing_transaction: &IngCurrentAccount) -> std::collections::HashSet<String> {
-    // TODO: Figure out why we don't match #books at the end of the tags string.
+fn inherent_tags(ing_transaction: &IngCurrentAccount) -> Vec<String> {
     let reg = Regex::new(r"(#.+?)\b").unwrap();
-    std::collections::HashSet::from_iter(
+    let mut result = Vec::from_iter(
         reg.find_iter(&ing_transaction.tags)
             .map(|m| String::from(m.as_str().trim())),
-    )
+    );
+    result.sort_unstable();
+    result.dedup();
+    result
 }
 
 fn sink(ing_transaction: &IngCurrentAccount) -> Node {
@@ -108,7 +113,6 @@ fn sink(ing_transaction: &IngCurrentAccount) -> Node {
         Direction::Incoming => Node::ProperAccount(Account {
             iban: ing_transaction.account,
             name: String::from("My Account"),
-            account_type: Some(AccountType::Checking), // TODO: Un-hardcode this -> from config
         }),
         Direction::Outgoing => determine_node_type(ing_transaction),
     }
@@ -119,7 +123,6 @@ fn source(ing_transaction: &IngCurrentAccount) -> Node {
         Direction::Outgoing => Node::ProperAccount(Account {
             iban: ing_transaction.account,
             name: String::from("My Account"),
-            account_type: Some(AccountType::Checking), // TODO: Un-hardcode this.
         }),
         Direction::Incoming => determine_node_type(ing_transaction),
     }
@@ -137,6 +140,11 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
         return Node::Atm(String::from(&mtch["terminalID"]));
     }
 
+    let my_account = Account {
+        // TODO: Unhardcode
+        iban: ing_transaction.account,
+        name: String::from("My Account"),
+    };
     if let Some(identifier) = &ing_transaction.counter_party {
         let brokerage = Regex::new(r"\d+").unwrap();
 
@@ -144,19 +152,13 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
             return Node::ProperAccount(Account {
                 iban,
                 name: String::from(&ing_transaction.name),
-                account_type: None,
             });
         } else if brokerage.is_match(identifier) {
             return Node::SubAccount(SubAccount {
                 bsan: String::from(identifier),
                 name: String::from(&ing_transaction.name),
                 account_type: Some(AccountType::Brokerage),
-                parent_account: Account {
-                    // TODO: Unhardcode
-                    iban: ing_transaction.account,
-                    name: String::from("My Account"),
-                    account_type: Some(AccountType::Checking),
-                },
+                parent_account: Some(my_account.id()),
             });
         }
     }
@@ -167,11 +169,7 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
         return Node::SubAccount(SubAccount {
             bsan: String::from(&sprknr["sprekeningnr"]),
             name: String::from(&ing_transaction.name),
-            parent_account: Account {
-                iban: ing_transaction.account,
-                name: String::from("My Account"),
-                account_type: Some(AccountType::Checking),
-            },
+            parent_account: Some(my_account.id()),
             account_type: Some(AccountType::Saving),
         });
     }
