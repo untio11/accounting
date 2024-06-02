@@ -101,6 +101,7 @@ fn read_transactions_from(file: File) -> Vec<Transaction> {
 /// Remove duplicate transactions from the vector. This leaves the transactions
 /// in random order.
 fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
+    // itertools dedup.
     let set: HashSet<_> = transactions.drain(..).collect(); // dedup
     transactions.extend(set);
     transactions

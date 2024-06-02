@@ -4,7 +4,7 @@ use super::{
 };
 use std::collections::HashMap;
 
-pub fn node_frequencies(transactions: Transactions) -> HashMap<ID<Node>, u64> {
+pub fn node_frequencies(transactions: &Transactions) -> HashMap<ID<Node>, u64> {
     let mut result = HashMap::new();
     for transaction in transactions {
         result

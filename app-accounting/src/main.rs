@@ -9,19 +9,76 @@ use crate::{
 use clap::Parser;
 use color_eyre::Result;
 use iban::Iban;
-use processing::types::{Account, Node};
-// use rusqlite::Connection;
+use parsing::Direction;
+use processing::types::{Account, Node, Transaction};
+use rusqlite::Connection;
+use rust_decimal::Decimal;
+
+fn insert_node(db: &Connection, node_id: String) {
+    db.execute("INSERT OR IGNORE INTO nodes (id) VALUES (?1)", [(node_id)])
+        .unwrap();
+}
+
+fn insert_transaction(db: &Connection, t: &Transaction) {
+    db.execute(
+        "INSERT OR REPLACE INTO transactions VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        (
+            t.id().to_string(),
+            t.date.to_string(),
+            t.source.id().to_string(),
+            t.sink.id().to_string(),
+            (t.amount * Decimal::ONE_HUNDRED).to_string(),
+            t.inherent_tags.join(" "),
+            t.description.to_owned(),
+            match t.direction {
+                Direction::Incoming => "Incoming",
+                Direction::Outgoing => "Outgoing",
+            },
+        ),
+    )
+    .unwrap();
+}
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    // let db = Connection::open("sandbox/database.db")?;
-    // db.execute(
-    //     "create table if not exists transactions (
-    //          id integer primary key,
-    //          name text not null unique
-    //      )",
-    //     NO_PARAMS,
-    // )?;
+    let db = Connection::open("sandbox/transactions.db")?;
+    db.execute(
+        "create table if not exists nodes (
+            id TEXT PRIMARY KEY
+        )",
+        (),
+    )?;
+    db.execute(
+        "create table if not exists transactions (
+            id TEXT PRIMARY KEY,
+            date TEXT NOT NULL,
+            sourceid TEXT,
+            sinkid TEXT,
+            amount TEXT NOT NULL,
+            inherenttags TEXT,
+            description TEXT NOT NULL,
+            direction TEXT NOT NULL,
+            FOREIGN KEY(sourceid) REFERENCES nodes(id)
+            FOREIGN KEY(sinkid) REFERENCES nodes(id)
+        )",
+        (),
+    )?;
+    db.execute("INSERT OR IGNORE INTO nodes (id) VALUES (?1)", [("id-1")])?;
+    db.execute("INSERT OR IGNORE INTO nodes (id) VALUES (?1)", [("id-2")])?;
+    db.execute(
+        "INSERT OR REPLACE INTO transactions VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        (
+            "id-0",
+            "2024-28-05",
+            "id-1",
+            "id-2",
+            "12",
+            "#tag",
+            "description placeholder",
+            "Incoming",
+        ),
+    )?;
+
     let args = crate::parsing::Args::parse();
     println!("{:?}", args);
     let my_account = Account {
@@ -58,11 +115,15 @@ fn main() -> Result<()> {
     };
 
     if let Ok(transactions) = transactions_from_path(&args.path) {
-        let node_freq = summaries::node_frequencies(transactions);
+        transactions
+            .iter()
+            .for_each(|transaction| insert_transaction(&db, transaction));
+        let node_freq = summaries::node_frequencies(&transactions);
         let mut node_freq: Vec<_> = node_freq.iter().collect();
         node_freq.sort_unstable_by(|a, b| b.1.cmp(a.1));
 
         for (id, count) in node_freq.iter() {
+            insert_node(&db, id.to_string());
             println!(
                 "{:?}: {count}",
                 if let Some(node) = me.owned.iter().find(|node| node.id() == *(*id)) {
