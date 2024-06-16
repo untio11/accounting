@@ -1,13 +1,15 @@
+use crate::parsing::deserializers::serde_iban;
 use crate::processing::{Identify, ID};
 use core::fmt;
 use iban::Iban;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     marker::PhantomData,
 };
 
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum AccountType {
     /// Your everyday account: pay bills, buy stuff, receive salary. Cash is flowing here.
     /// No interest though most of the time.
@@ -22,8 +24,9 @@ pub enum AccountType {
     Unknown,
 }
 /// A proper bank account that is guaranteed to have an Iban.
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Account {
+    #[serde(with = "serde_iban")]
     pub iban: Iban,
     pub name: String,
     // pub account_type: Option<AccountType>, // TODO: Can we actually derive this information from the raw data though?
@@ -45,13 +48,12 @@ impl fmt::Display for Account {
 
 /// Almost a bank account, except it's tied to a real account and as such doesn't have
 /// an official iban.
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct SubAccount {
-    /// Bank Sub Account Number. This is not a "real" thing (I think), but it serves
-    // its purpose.
+    /// Bank Sub Account Number. This is not a "real" thing (I think), but it serves its purpose.
     pub bsan: String,
     pub name: String,
-    pub parent_account: Option<ID<Account>>, // Might be nice to have? -> Also not generally known at read-time
+    pub parent_account: Account, // Might be nice to have? -> Also not generally known at read-time
     pub account_type: Option<AccountType>,
 }
 impl Identify for SubAccount {
@@ -68,7 +70,7 @@ impl fmt::Display for SubAccount {
         write!(
             f,
             "[{:?}/ {}] {}",
-            self.parent_account,
+            self.parent_account.id(),
             self.id(),
             self.name
         )

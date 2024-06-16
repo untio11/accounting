@@ -132,12 +132,19 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
     let termid = Regex::new(r"Term: (?<terminalID>\w+)").unwrap();
     let mut term_id_matcher = termid.captures_iter(&ing_transaction.description);
 
-    if ing_transaction.code == Code::BA {
-        let mtch = term_id_matcher.next().unwrap();
-        return Node::Terminal(String::from(&mtch["terminalID"]));
-    } else if ing_transaction.code == Code::GM {
-        let mtch = term_id_matcher.next().unwrap();
-        return Node::Atm(String::from(&mtch["terminalID"]));
+    if ing_transaction.code == Code::BA || ing_transaction.code == Code::GM {
+        return Node::Terminal(match term_id_matcher.next() {
+            Some(mtch) => mtch["terminalID"].into(),
+            None => "UNKNOWN_TERM_ID".into(),
+        });
+    }
+
+    if ing_transaction.code == Code::DV {
+        return Node::Other("ING".into());
+    }
+
+    if ing_transaction.code == Code::ST {
+        return Node::Other("Deposit".into());
     }
 
     let my_account = Account {
@@ -158,7 +165,7 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
                 bsan: String::from(identifier),
                 name: String::from(&ing_transaction.name),
                 account_type: Some(AccountType::Brokerage),
-                parent_account: Some(my_account.id()),
+                parent_account: my_account,
             });
         }
     }
@@ -169,7 +176,7 @@ fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
         return Node::SubAccount(SubAccount {
             bsan: String::from(&sprknr["sprekeningnr"]),
             name: String::from(&ing_transaction.name),
-            parent_account: Some(my_account.id()),
+            parent_account: my_account,
             account_type: Some(AccountType::Saving),
         });
     }

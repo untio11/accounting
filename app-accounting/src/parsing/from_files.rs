@@ -1,5 +1,6 @@
 use crate::parsing::Direction;
 use crate::processing::types::{Transaction, Transactions};
+use crate::state::Owner;
 use crate::{parsing::IngCurrentAccount, processing::Identify};
 use clap::Parser;
 use core::panic;
@@ -13,10 +14,12 @@ use std::{
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// Path to a .csv file or a directory that contains at
-    /// least one .csv file.
+    /// Path to a .csv file or a directory that contains at least one .csv file.
     #[arg(short, long)]
-    pub path: std::path::PathBuf,
+    pub csv_path: std::path::PathBuf,
+    /// Path to a profile .json file.
+    #[arg(short, long)]
+    pub profile_path: std::path::PathBuf,
 }
 
 /// Deserialize .csv files into a Vector of Transactions.
@@ -126,4 +129,14 @@ pub fn print_csv_line(line: &Transaction) {
     println!("| Inhrnt Tgs:  {:?}", line.inherent_tags);
     println!("| Description: {}", line.description);
     println!("+------------------+");
+}
+
+pub fn profile_from_path(file_path: &path::PathBuf) -> Owner {
+    use serde_json::from_reader;
+    let profile_json_file = if file_path.is_file() && file_path.extension().unwrap() == "json" {
+        file_path
+    } else {
+        panic!("Expecting a path to a directory or a .csv file")
+    };
+    from_reader(File::open(profile_json_file).expect("File error")).unwrap()
 }

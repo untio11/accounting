@@ -5,6 +5,7 @@ use crate::{
 };
 use chrono::NaiveDate;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::hash_map::DefaultHasher,
     fmt::{Debug, Display},
@@ -13,7 +14,7 @@ use std::{
 };
 
 /// Represents a point between which money flows during transactions.
-#[derive(Hash, Debug, PartialEq, Eq, Clone)]
+#[derive(Hash, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub enum Node {
     /// A fully qualified bank account with an IBAN.
     ProperAccount(Account),
@@ -25,6 +26,8 @@ pub enum Node {
     Terminal(String),
     /// Make those numbers real and turn them into cold, hard cash.
     Atm(String),
+    /// Other, hard to identify nodes. For example: bank charges for services, deposits.
+    Other(String),
 }
 impl Node {
     #[allow(dead_code)]
@@ -34,6 +37,7 @@ impl Node {
             Node::ProperAccount(acc) => format!("(PA) {}", acc.name),
             Node::SubAccount(acc) => format!("(SA) {}", acc.name),
             Node::Terminal(_) => String::from("Payment Terminal"),
+            Node::Other(id) => String::from(id),
         }
     }
     fn display_details(self) -> String {
@@ -42,6 +46,7 @@ impl Node {
             Node::ProperAccount(acc) => format!("{}", acc),
             Node::SubAccount(acc) => format!("{}", acc),
             Node::Terminal(id) => format!("*{}* {} (Payment Terminal)", self.id(), id),
+            Node::Other(id) => id.to_string(),
         }
     }
 }
@@ -52,7 +57,7 @@ impl Identify for Node {
         match self {
             Node::ProperAccount(acc) => Self::transfer_from(acc.id()),
             Node::SubAccount(acc) => Self::transfer_from(acc.id()),
-            Node::Terminal(id) | Node::Atm(id) => {
+            Node::Terminal(id) | Node::Atm(id) | Node::Other(id) => {
                 id.hash(&mut hasher);
                 ID(hasher.finish(), PhantomData)
             }

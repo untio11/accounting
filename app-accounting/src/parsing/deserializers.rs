@@ -88,7 +88,7 @@ pub mod serde_amount {
 }
 pub mod serde_iban {
     use iban::Iban;
-    use serde::{self, Deserialize, Deserializer};
+    use serde::{self, Deserialize, Deserializer, Serializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Iban, D::Error>
     where
@@ -97,6 +97,12 @@ pub mod serde_iban {
         let s: String = String::deserialize(deserializer)?;
         let dt: Iban = Iban::parse(&s).map_err(serde::de::Error::custom)?;
         Ok(dt)
+    }
+    pub fn serialize<S>(iban: &Iban, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(iban.as_str())
     }
 }
 

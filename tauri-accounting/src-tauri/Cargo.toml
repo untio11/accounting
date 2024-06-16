@@ -15,4 +15,4 @@ serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2.0.0-beta", features = [] }
 tauri-plugin-shell = "2.0.0-beta"
-
+app-accounting = { path = "../../app-accounting" }

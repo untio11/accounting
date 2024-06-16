@@ -1,4 +1,4 @@
-mod deserializers;
+pub mod deserializers;
 mod from_files;
 mod ing;
 
