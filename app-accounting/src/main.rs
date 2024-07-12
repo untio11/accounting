@@ -1,20 +1,31 @@
-mod parsing;
-mod processing;
-mod state;
-use crate::{parsing::transactions_from_path, processing::summaries};
 use clap::Parser;
 use color_eyre::Result;
 use itertools::Itertools;
-use parsing::{profile_from_path, Direction};
-use processing::{
-    types::{Node, Transaction},
-    Identify,
+
+mod analysis;
+mod canonical;
+mod from_files;
+use crate::{
+    analysis::summaries,
+    canonical::{identify::*, transaction::*},
+    from_files::import::{profile_from_path, transactions_from_path},
 };
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    /// Path to a .csv file or a directory that contains at least one .csv file.
+    #[arg(short, long)]
+    pub csv_path: std::path::PathBuf,
+    /// Path to a profile .json file.
+    #[arg(short, long)]
+    pub profile_path: std::path::PathBuf,
+}
 
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    let args = crate::parsing::Args::parse();
+    let args = Args::parse();
     println!("{:?}", args);
 
     let me = profile_from_path(&args.profile_path);
