@@ -1,7 +1,4 @@
-use crate::{
-    parsing::deserializers::*,
-    processing::{types::*, Identify},
-};
+use crate::{parsing::deserializers::*, processing::types::*};
 use chrono::NaiveDate;
 use iban::Iban;
 use regex::Regex;
@@ -54,7 +51,9 @@ pub struct IngCurrentAccount {
     #[serde(rename = "Code")]
     pub code: Code,
 
-    /// Constant "Debit" | "Credit" - debit = incoming, credit = outgoing.
+    /// Constant "Debit" | "Credit"
+    ///
+    /// Debit = incoming, Credit = outgoing.
     #[serde(rename = "Debit/credit", alias = "Af Bij")]
     pub direction: Direction,
 
@@ -92,7 +91,6 @@ impl From<IngCurrentAccount> for Transaction {
             inherent_tags: inherent_tags(&value),
             source: source(&value),
             sink: sink(&value),
-            direction: value.direction,
         }
     }
 }
@@ -129,10 +127,9 @@ fn source(ing_transaction: &IngCurrentAccount) -> Node {
 }
 
 fn determine_node_type(ing_transaction: &IngCurrentAccount) -> Node {
-    let termid = Regex::new(r"Term: (?<terminalID>\w+)").unwrap();
-    let mut term_id_matcher = termid.captures_iter(&ing_transaction.description);
-
     if ing_transaction.code == Code::BA || ing_transaction.code == Code::GM {
+        let termid = Regex::new(r"Term: (?<terminalID>\w+)").unwrap();
+        let mut term_id_matcher = termid.captures_iter(&ing_transaction.description);
         return Node::Terminal(match term_id_matcher.next() {
             Some(mtch) => mtch["terminalID"].into(),
             None => "UNKNOWN_TERM_ID".into(),

@@ -1,7 +1,6 @@
-use crate::parsing::Direction;
+use crate::parsing::IngCurrentAccount;
 use crate::processing::types::{Transaction, Transactions};
 use crate::state::Owner;
-use crate::{parsing::IngCurrentAccount, processing::Identify};
 use clap::Parser;
 use core::panic;
 use std::{
@@ -77,12 +76,7 @@ pub fn transactions_from_path(file_path: &path::PathBuf) -> Result<Transactions,
     println!("Sorting transactions on date");
     transactions.sort_by(|a, b| a.date.cmp(&b.date));
 
-    println!("Accessing first 5 elements:");
-    for line in &transactions[..5] {
-        print_csv_line(line);
-    }
-
-    Ok(transactions)
+    Ok(Transactions::new(transactions))
 }
 
 /// Deserialize the transactions in a single .csv file. At this point, there
@@ -110,33 +104,12 @@ fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
     transactions
 }
 
-pub fn print_csv_line(line: &Transaction) {
-    println!("\n+==================+");
-    println!(
-        "| {} | ({})",
-        line.id(),
-        if line.direction == Direction::Incoming {
-            "+"
-        } else {
-            "-"
-        }
-    );
-    println!("+==================+");
-    println!("| Amount:      {}", line.amount);
-    println!("| Date:        {}", line.date);
-    println!("| Source:      {}", line.source);
-    println!("| Sink:        {}", line.sink);
-    println!("| Inhrnt Tgs:  {:?}", line.inherent_tags);
-    println!("| Description: {}", line.description);
-    println!("+------------------+");
-}
-
 pub fn profile_from_path(file_path: &path::PathBuf) -> Owner {
     use serde_json::from_reader;
     let profile_json_file = if file_path.is_file() && file_path.extension().unwrap() == "json" {
         file_path
     } else {
-        panic!("Expecting a path to a directory or a .csv file")
+        panic!("Expecting a path to a .json file")
     };
     from_reader(File::open(profile_json_file).expect("File error")).unwrap()
 }

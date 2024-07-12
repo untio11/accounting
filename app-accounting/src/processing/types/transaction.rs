@@ -86,9 +86,16 @@ pub struct Transaction {
     pub inherent_tags: Vec<String>,
     /// An inconsistantly formatted string describing some properties of the transaction.
     pub description: String,
-    /// Direction of the transaction.
-    pub direction: Direction,
 }
 impl Identify for Transaction {
     type IdType = Transaction;
+}
+impl Transaction {
+    pub fn direction(&self, perspective: &Node) -> Direction {
+        if self.sink.id() == perspective.id() {
+            Direction::Incoming
+        } else {
+            Direction::Outgoing
+        }
+    }
 }
