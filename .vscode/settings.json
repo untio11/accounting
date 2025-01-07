@@ -1,6 +1,16 @@
 {
     "editor.formatOnSave": true,
+    "rust-analyzer.server.path": "rust-analyzer",
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.features": "all",
+    "rust-analyzer.diagnostics.experimental.enable": true,
+    "rust-analyzer.diagnostics.styleLints.enable": true,
+    "rust-analyzer.hover.actions.references.enable": true,
+    "rust-analyzer.restartServerOnConfigChange": true,
+    "rust-analyzer.semanticHighlighting.operator.specialization.enable": true,
+    "rust-analyzer.semanticHighlighting.punctuation.enable": true,
+    "rust-analyzer.semanticHighlighting.punctuation.separate.macro.bang": true,
+    "rust-analyzer.semanticHighlighting.punctuation.specialization.enable": true,
     "nix.enableLanguageServer": true,
-    "nix.serverPath": "nil",
-    "rust-analyzer.showUnlinkedFileNotification": false,
+    "nix.serverPath": "nixd",
 }
