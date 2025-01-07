@@ -190,8 +190,12 @@ pub mod serializers {
                 Transaction {
                     amount: value.amount,
                     date: value.date,
-                    description: String::from(&value.description),
-                    inherent_tags: inherent_tags(&value),
+                    description: value.description.clone(),
+                    inherent_tags: if value.tags.is_empty() {
+                        String::from("")
+                    } else {
+                        value.tags.clone()
+                    },
                     source: source(&value),
                     sink: sink(&value),
                 }
@@ -296,7 +300,6 @@ pub mod import {
     use crate::canonical::{state::Owner, transaction::*};
     use core::panic;
     use std::{
-        collections::HashSet,
         error::Error,
         fs::{self, File},
         path,
@@ -348,17 +351,6 @@ pub mod import {
             }
         }
 
-        println!("Deduplicating transactions");
-        let before = transactions.len();
-        deduplicate(&mut transactions);
-        println!(
-            "> Removed {:?} duplicate transaction(s)",
-            before - transactions.len()
-        );
-
-        println!("Sorting transactions on date");
-        transactions.sort_by(|a, b| a.date.cmp(&b.date));
-
         Ok(Transactions::new(transactions))
     }
 
@@ -375,15 +367,6 @@ pub mod import {
         for row in reader.deserialize::<IngCurrentAccount>().flatten() {
             transactions.push(Transaction::from(row));
         }
-        transactions
-    }
-
-    /// Remove duplicate transactions from the vector. This leaves the transactions
-    /// in random order.
-    fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
-        // itertools dedup.
-        let set: HashSet<_> = transactions.drain(..).collect(); // dedup
-        transactions.extend(set);
         transactions
     }
 

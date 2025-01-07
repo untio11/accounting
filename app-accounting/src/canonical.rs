@@ -1,39 +1,18 @@
 pub mod transaction {
-    use crate::canonical::{account::*, identify::*};
     use chrono::NaiveDate;
+    use regex::Regex;
     use rust_decimal::Decimal;
     use serde::{Deserialize, Serialize};
     use std::{
-        collections::hash_map::DefaultHasher,
+        cmp::Ordering,
+        collections::{hash_map::DefaultHasher, HashSet},
         fmt::{Debug, Display},
         hash::{Hash, Hasher},
+        marker::PhantomData,
+        slice::Iter,
     };
 
-    /// A list of unique Transactions sorted by increasing date to the level
-    /// of days (i.e.: order of transactions on the same day cannot be guaranteed.)
-    pub struct Transactions(Vec<Transaction>);
-    impl Transactions {
-        pub fn iter(&self) -> std::slice::Iter<'_, Transaction> {
-            self.0.iter()
-        }
-        pub fn new(transactions: Vec<Transaction>) -> Self {
-            // TODO: Add sorting and validation here.
-            Self(transactions)
-        }
-        /// Return a slice to view the full underlying vector.
-        pub fn data(&self) -> &[Transaction] {
-            &self.0
-        }
-    }
-
-    /// Denotes the direction of the transaction.
-    #[derive(Debug, PartialEq, Eq, Hash)]
-    pub enum Direction {
-        /// AKA: "Credit", "Bij"
-        Incoming,
-        /// AKA: "Debit", "Af"
-        Outgoing,
-    }
+    use super::{account::*, identify::*};
 
     /// Represents a point between which money flows during transactions.
     #[derive(Hash, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -59,11 +38,11 @@ pub mod transaction {
                 Node::ProperAccount(acc) => format!("(PA) {}", acc.name),
                 Node::SubAccount(acc) => format!("(SA) {}", acc.name),
                 Node::Terminal(_) => String::from("Payment Terminal"),
-                Node::Other(id) => String::from(id),
+                Node::Other(id) => id.clone(),
             }
         }
-        fn display_details(self) -> String {
-            match &self {
+        fn display_details(&self) -> String {
+            match self {
                 Node::Atm(id) => format!("^{}^ {} (ATM)", self.id(), id),
                 Node::ProperAccount(acc) => format!("{}", acc),
                 Node::SubAccount(acc) => format!("{}", acc),
@@ -92,9 +71,31 @@ pub mod transaction {
         }
     }
 
+    /// Denotes the direction of the transaction. Can only be determined with respect to a specific node.
+    #[derive(Debug, PartialEq, Eq, Hash)]
+    pub enum Direction {
+        /// AKA: "Credit", "Bij"
+        Incoming,
+        /// AKA: "Debit", "Af"
+        Outgoing,
+    }
+
+    /// Remove duplicate transactions from the vector. This leaves the transactions
+    /// in random order.
+    fn deduplicate(transactions: &mut Vec<Transaction>) -> &mut Vec<Transaction> {
+        // itertools dedup.
+        let set: HashSet<_> = transactions.drain(..).collect(); // dedup
+        transactions.extend(set);
+        transactions
+    }
+
+    fn date_increasing(a: &Transaction, b: &Transaction) -> Ordering {
+        a.date.cmp(&b.date)
+    }
+
     /// A uniform representation of monetary transactions, decoupled from the format provided
     /// by the bank transaction exports.
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, PartialEq, Eq, Hash, Clone)]
     pub struct Transaction {
         /// The date on which the transaction is registered.
         pub date: NaiveDate,
@@ -105,15 +106,24 @@ pub mod transaction {
         /// The amount of money that is transferred in this transaction.
         pub amount: Decimal,
         /// A set of tags that can be derived directly from the data of the raw csv transaction.
-        pub inherent_tags: Vec<String>,
+        pub inherent_tags: String,
         /// An inconsistantly formatted string describing some properties of the transaction.
         pub description: String,
     }
     impl Identify for Transaction {
-        type IdType = Transaction;
+        type IdType = Self;
     }
     impl Transaction {
+        /// Return a set containing tags that can be derived from the transaction itself. Empty set if there are no tags.
+        pub fn tags(&self) -> HashSet<String> {
+            let reg = Regex::new(r"(#.+?)\b").unwrap();
+            HashSet::from_iter(
+                reg.find_iter(self.inherent_tags.as_str())
+                    .map(|m| String::from(m.as_str().trim())),
+            )
+        }
         pub fn direction(&self, perspective: &Node) -> Direction {
+            // TODO: Some better error handling. this is wrong semantically.
             if self.sink.id() == perspective.id() {
                 Direction::Incoming
             } else {
@@ -121,6 +131,86 @@ pub mod transaction {
             }
         }
     }
+
+    // Represents a view on transactions.
+    pub trait View<'a> {
+        fn data(&'a self) -> &'a [Transaction]; // TODO: Probably should return an iterator, not everyone can actually return a slice
+    }
+
+    /// A list of unique Transactions sorted by increasing date to the level
+    /// of days (i.e.: order of transactions on the same day cannot be guaranteed.)
+    pub struct Transactions<'a, Perspective = Source<'a>>
+    where
+        Perspective: View<'a>,
+    {
+        perspective: Perspective,
+        marker: PhantomData<&'a ()>,
+    }
+
+    /// Base perspective to have on transactions. Just everything as is.
+    pub struct Source<'a> {
+        data: Box<[Transaction]>,
+        marker: PhantomData<&'a ()>,
+    }
+    impl<'a> View<'a> for Source<'a> {
+        fn data(&'a self) -> &'a [Transaction] {
+            &self.data
+        }
+    }
+    impl<'a> Transactions<'a, Source<'a>> {
+        /// Return a slice to the data described by the view.
+        pub fn data(&'a self) -> &'a [Transaction] {
+            self.perspective.data()
+        }
+        pub fn iter(&'a self) -> Iter<'a, Transaction> {
+            self.perspective.data().iter()
+        }
+        pub fn new(mut transactions: Vec<Transaction>) -> Self {
+            println!("Deduplicating transactions");
+            let before = transactions.len();
+            deduplicate(&mut transactions);
+            println!(
+                "> Removed {:?} duplicate transaction(s)",
+                before - transactions.len()
+            );
+
+            println!("Sorting transactions on date");
+            transactions.sort_by(date_increasing);
+
+            Self {
+                perspective: Source {
+                    data: transactions.into_boxed_slice(),
+                    marker: PhantomData,
+                },
+                marker: PhantomData,
+            }
+        }
+        pub fn filter<F: Fn(&Transaction) -> bool>(
+            &'a self,
+            by: F,
+        ) -> Transactions<'a, Filtered<'a>> {
+            let data_iter = self.iter().cloned();
+            let filtered_data = data_iter.filter(|transaction| by(transaction));
+            Transactions {
+                perspective: Filtered {
+                    data: filtered_data.collect(),
+                    marker: PhantomData,
+                },
+                marker: PhantomData,
+            }
+        }
+    }
+
+    pub struct Filtered<'a> {
+        data: Box<[Transaction]>,
+        marker: PhantomData<&'a ()>,
+    }
+    impl<'a> View<'a> for Filtered<'a> {
+        fn data(&'a self) -> &'a [Transaction] {
+            &self.data
+        }
+    }
+    impl<'a> Transactions<'a, Filtered<'a>> {}
 }
 
 pub mod account {
@@ -134,7 +224,7 @@ pub mod account {
         hash::{Hash, Hasher},
     };
 
-    #[derive(Hash, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+    #[derive(Hash, Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
     pub enum AccountType {
         /// Your everyday account: pay bills, buy stuff, receive salary. Cash is flowing here.
         /// No interest though most of the time.
@@ -217,6 +307,9 @@ pub mod state {
         pub fn view(&self, id: &ID<Node>) -> Option<&Node> {
             self.owns.iter().find(|node| &node.id() == id)
         }
+        pub fn owns(&self, id: &ID<Node>) -> bool {
+            self.view(id).is_some()
+        }
     }
 }
 
@@ -233,11 +326,6 @@ pub mod identify {
     impl<Of: Identify> ID<Of> {
         pub fn new(id: u64) -> Self {
             Self(id, PhantomData)
-        }
-    }
-    impl<Of: Identify> From<ID<Of>> for String {
-        fn from(val: ID<Of>) -> Self {
-            format!("{:X}", val.0)
         }
     }
     /// Display the `u64` ID value as a hexadecimal string.
@@ -277,13 +365,13 @@ pub mod identify {
         ///     // Hash the relevant properties of self:
         ///     self.identifying_prop.hash(&mut hasher);
         ///     // ...
-        ///     return ID(hasher.finish(), PhantomData);
+        ///     return ID::new(hasher.finish());
         /// }
         /// ```
         fn id(&self) -> ID<Self::IdType> {
             let mut hasher = DefaultHasher::new();
             self.hash(&mut hasher);
-            ID(hasher.finish(), PhantomData)
+            ID::new(hasher.finish())
         }
 
         /// Discard `other`'s ID Type and rewrap it in `Self::IdType`.
@@ -301,9 +389,7 @@ pub mod identify {
         /// let node_id: ID<Node> = Node::transfer_from(account_id);
         /// ```
         fn transfer_from<OtherIdType: Identify>(other: ID<OtherIdType>) -> ID<Self::IdType> {
-            match other {
-                ID(other_id_value, _) => ID(other_id_value, PhantomData),
-            }
+            ID::new(other.0)
         }
     }
 }
