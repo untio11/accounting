@@ -1,10 +1,6 @@
 [workspace]
-members = [
-  "app-accounting",
-  "lib-rapid-map",
-  "tauri-accounting/src-tauri",
-]
-default-members = [ "app-accounting" ]
+members = ["app-accounting", "tauri-accounting/src-tauri"]
+default-members = ["app-accounting"]
 resolver = "2"
 
 [workspace.dependencies]
