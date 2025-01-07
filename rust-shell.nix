@@ -32,5 +32,6 @@ pkgs.mkShell {
     nixd
     nixfmt-rfc-style
     just
+    oils-for-unix
   ];
 }

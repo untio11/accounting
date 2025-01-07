@@ -4,5 +4,6 @@
         "jnoortheen.nix-ide",
         "mkhl.direnv",
         "ryanluker.vscode-coverage-gutters",
+        "tamasfe.even-better-toml",
     ]
 }
