@@ -1,79 +1,84 @@
-mod parsing;
-mod processing;
-mod state;
 use crate::{
-    parsing::transactions_from_path,
-    processing::{summaries, types::SubAccount, Identify},
-    state::Owner,
+    analysis::summaries,
+    canonical::{identify::*, transaction::*},
+    from_files::import::{profile_from_path, transactions_from_path},
 };
 use clap::Parser;
 use color_eyre::Result;
-use iban::Iban;
-use processing::types::{Account, Node};
-// use rusqlite::Connection;
+use itertools::{self, Itertools};
+
+mod analysis;
+mod canonical;
+mod from_files;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    /// Path to a .csv file or a directory that contains at least one .csv file.
+    #[arg(short, long)]
+    pub csv_path: std::path::PathBuf,
+    /// Path to a profile .json file.
+    #[arg(short, long)]
+    pub profile_path: std::path::PathBuf,
+}
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    // let db = Connection::open("sandbox/database.db")?;
-    // db.execute(
-    //     "create table if not exists transactions (
-    //          id integer primary key,
-    //          name text not null unique
-    //      )",
-    //     NO_PARAMS,
-    // )?;
-    let args = crate::parsing::Args::parse();
-    println!("{:?}", args);
-    let my_account = Account {
-        iban: Iban::parse("NL95INGB0756630126").unwrap(),
-        name: String::from("My Account"),
-    };
-    let me = Owner {
-        name: "Robin",
-        owned: vec![
-            Node::ProperAccount(my_account.clone()),
-            Node::ProperAccount(Account {
-                iban: Iban::parse("NL18BUNQ2091852465").unwrap(),
-                name: String::from("My Bunq Account"),
-            }),
-            Node::SubAccount(SubAccount {
-                bsan: String::from("S96846640"),
-                name: String::from("Leuke Dingen"),
-                parent_account: Some(my_account.id()),
-                account_type: Some(processing::types::AccountType::Saving),
-            }),
-            Node::SubAccount(SubAccount {
-                bsan: String::from("14742098"),
-                name: String::from("Beleggingsrekening"),
-                parent_account: Some(my_account.id()),
-                account_type: Some(processing::types::AccountType::Brokerage),
-            }),
-            Node::SubAccount(SubAccount {
-                bsan: String::from("T78658603"),
-                name: String::from("Buffer"),
-                parent_account: Some(my_account.id()),
-                account_type: Some(processing::types::AccountType::Saving),
-            }),
-        ],
-    };
 
-    if let Ok(transactions) = transactions_from_path(&args.path) {
-        let node_freq = summaries::node_frequencies(transactions);
-        let mut node_freq: Vec<_> = node_freq.iter().collect();
-        node_freq.sort_unstable_by(|a, b| b.1.cmp(a.1));
+    let args = Args::parse();
+    println!("{:?}", args);
+
+    let me = profile_from_path(&args.profile_path);
+    if let Ok(transactions) = transactions_from_path(&args.csv_path, &me) {
+        println!("Accessing first 9 elements:");
+        for line in &transactions.data()[..9] {
+            print_csv_line(line, me.owns.first().unwrap());
+        }
+
+        let _filtered_data =
+            transactions.filter(|t| me.owns(&t.source.id()) || me.owns(&t.sink.id()));
+        let node_freq = summaries::node_frequencies(&transactions);
+        let node_freq: Vec<_> = node_freq.iter().sorted_by(|a, b| b.1.cmp(a.1)).collect();
 
         for (id, count) in node_freq.iter() {
             println!(
                 "{:?}: {count}",
-                if let Some(node) = me.owned.iter().find(|node| node.id() == *(*id)) {
-                    node.to_string()
-                } else {
-                    id.to_string()
+                match me.view(id) {
+                    Some(owned_node) => owned_node.to_string(),
+                    None => id.to_string(),
                 }
             );
         }
 
+        println!(
+            "Date range: {:?}",
+            [transactions.data().first(), transactions.data().last()].map(|t| t.unwrap().date)
+        );
+
         return Ok(());
     }
     panic!("Couldn't parse transactions successfully.");
+}
+
+fn print_csv_line(line: &Transaction, perspective: &Node) {
+    println!("\n+==================+");
+    println!(
+        "| {} | ({})",
+        line.id(),
+        match line.direction(perspective) {
+            Some(direction) => match direction {
+                Direction::Incoming => "+",
+                Direction::Outgoing => "-",
+            },
+            None => "?",
+        }
+    );
+    println!("+==================+");
+    println!("| Amount:      {}", line.amount);
+    println!("| Date:        {}", line.date);
+    println!("| Source:      {}", line.source);
+    println!("| Sink:        {}", line.sink);
+    println!("| Tags:        {:?}", line.tags());
+    println!("| Description: {}", line.description);
+    println!("+------------------+");
 }

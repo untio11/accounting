@@ -3,3 +3,5 @@ result
 .DS_Store
 .direnv/
 *.csv
+*log*
+sandbox/user-profile.json

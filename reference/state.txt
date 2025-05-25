@@ -49,3 +49,8 @@ Some things to track in state:
 - Owners -(owned)-> {Nodes}
 - Nodes that have certain properties set:
   - 
+
+=====
+Something on storing user profiles:
+- Seed values of accounts should always be in the past to ensure the value at the end of the day is known.
+- Seed values should probably only be settable through the program
