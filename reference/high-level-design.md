@@ -19,9 +19,15 @@ How do we get from the input to the output?
    - [dashboard design]
      - [show basic profile information]
    - [analysis options]
+     - [filtering: transactions between times]
+     - [filtering: cash flow per node]
      - [summary: amount of transactions]
-	   - [summary: transaction node frequencies]
+	  - [summary: transaction node frequencies]
      - [summary: cash flow per node]
+
+## Analysis pipeline
+First narrow down the set of transactions to operate on, then perform the analysis.
+Good idea to put it on `Transactions` struct? Struct keeps ownership, provide iterators over subsets of transactions
 
 ## Profile stuff
 

@@ -13,4 +13,16 @@
     "rust-analyzer.semanticHighlighting.punctuation.specialization.enable": true,
     "nix.enableLanguageServer": true,
     "nix.serverPath": "nixd",
+    "nix.serverSettings": {
+        "nixd": {
+            "formatting": {
+                "command": [
+                    "nixfmt"
+                ]
+            }
+        }
+    },
+    "[nix]": {
+        "editor.defaultFormatter": "jnoortheen.nix-ide"
+    }
 }

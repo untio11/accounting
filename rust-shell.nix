@@ -29,9 +29,11 @@ pkgs.mkShell {
     rust
   ];
   packages = with pkgs; [
+    # Nix lsp/formatter
     nixd
     nixfmt-rfc-style
-    just
-    oils-for-unix
+    just # Common tasks
+    hyperfine # Benchmarking
+    # oils-for-unix # Maybe?
   ];
 }

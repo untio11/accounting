@@ -35,7 +35,7 @@ fn main() -> Result<()> {
             print_csv_line(line, me.owns.first().unwrap());
         }
 
-        let filtered_data =
+        let _filtered_data =
             transactions.filter(|t| me.owns(&t.source.id()) || me.owns(&t.sink.id()));
         let node_freq = summaries::node_frequencies(&transactions);
         let node_freq: Vec<_> = node_freq.iter().sorted_by(|a, b| b.1.cmp(a.1)).collect();
@@ -43,7 +43,7 @@ fn main() -> Result<()> {
         for (id, count) in node_freq.iter() {
             println!(
                 "{:?}: {count}",
-                match me.view(*id) {
+                match me.view(id) {
                     Some(owned_node) => owned_node.to_string(),
                     None => id.to_string(),
                 }

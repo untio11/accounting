@@ -309,14 +309,16 @@ pub mod import {
     ///
     /// `file_path` can point to:
     /// - a directory that contains at least 1 .csv file. In this case,
+    ///
     /// all .csv's in that directory will be deserialized.
-    /// - a single .csv file. In this case, just this .csv file will be
-    /// deserialized.
+    /// - a single .csv file. In this case, just this .csv file will be deserialized.
     ///
     /// The resulting vector satisfies the following properties:
     /// - The transactions are sorted by increasing date, at the granularity
+    ///
     /// of days. Order of transactions occuring on the same day cannot be guaranteed.
     /// - The transactions are unique. This is based on the hash of the transaction.
+    ///
     /// Note: this isn't guaranteed to be the same hash ID you get from `Transaction::id()`.
     pub fn transactions_from_path(
         file_path: &path::PathBuf,
@@ -324,7 +326,7 @@ pub mod import {
         let files = match file_path {
             dirname if file_path.is_dir() => {
                 println!("Looking for .csv files in directory: {:?}", dirname);
-                let mut files: Vec<path::PathBuf> = vec![];
+                let mut files: Vec<_> = vec![];
                 for path in fs::read_dir(dirname)? {
                     let path = path.unwrap().path();
                     if path.is_file() && path.extension().unwrap() == "csv" {
@@ -337,7 +339,7 @@ pub mod import {
                 files
             }
             csv_file if file_path.is_file() && file_path.extension().unwrap() == "csv" => {
-                vec![path::PathBuf::clone(csv_file)]
+                Vec::from([csv_file.clone()])
             }
             _ => panic!("Expecting a path to a directory or a .csv file"),
         };
